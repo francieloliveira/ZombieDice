@@ -2,8 +2,6 @@
 # Aluno: José Franciel Pires de Oliveira
 import random
 
-import empty as empty
-
 player = ''
 cerebro = 0
 passo = 0
@@ -18,7 +16,7 @@ dadoVermelho = ('TPTCPT')
 corDado: str = ''
 WIN = False
 dadosSorteados = []
-rnd = ''
+rnd = int
 
 
 # Função para Adicionar 13 dados ao Copo
@@ -64,32 +62,28 @@ def sortearDadoVermelho():
 
 
 # Função
-def jogadorPerdeu(playerAtual):
-    dictPlayers.pop(playerAtual)
-    print(f"Jogador {playerAtual} perdeu!")
+def jogadorPerdeu(player_atual):
+    dictPlayers.pop(player_atual)
+    print(f"Jogador {player_atual} perdeu!")
     return None
 
 
-def jogadorVenceu(playerAtual):
-    print(f"Jogador {playerAtual} Venceu")
-    return None
+def jogadorVenceu(player_atual):
+    print(f"Jogador {player_atual} Venceu")
+    WIN = True
+    return WIN
 
 
 # sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente
 def sortear3Dados():
     for i in range(3):
         rnd = random.randint(0, 12)
-        dadoSorteado = copo[rnd]
-        dadosSorteados.append(dadoSorteado)
-        copo.remove(dadoSorteado)
+        dado = copo[rnd]
+        dadosSorteados.append(dado)
+        copo.remove(dado)
     print("dadosSorteados: ", dadosSorteados)
     print("Copo com dados removidos:", copo)
-    return dadosSorteados
-
-
-addDadosCopo()
-
-mostraCopo()
+    return list(dadosSorteados)
 
 # Solicita a quantidade Total de Players
 qtdPlayers = input('Informe a quantidade de Players \n')
@@ -115,7 +109,16 @@ while int(len(dictPlayers) + 1) <= int(qtdPlayers):
         break
 print(dictPlayers)
 
-while not WIN:
+print("*** Iniciando o jogo ***")
+
+# Add 13 dados no copo
+print("*** Inserindo dados no copo ***")
+addDadosCopo()
+
+# Mostra Copo
+mostraCopo()
+
+while not WIN or not list(dictPlayers.keys()):
     # Sorteia qual jogador começa o jogo
     playerAtual = random.choice(list(dictPlayers.keys()))
     print(f"Jogador atual:{playerAtual}")
@@ -124,13 +127,17 @@ while not WIN:
 
     # TODO implementar verificação do copo vazio
     while True:
-        # se copo não estiver vazio sorteie 3 dados
-        if copo is not None:
+        # Se copo estiver com 2 ou menos preencha novamente
+        if len(copo) <= 2:
+            print('*** O Copo está vazio! ***')
+            copo.clear()
+            addDadosCopo()
             dadosSorteados = sortear3Dados()
         else:
-            print('*** O Copo está vazio! ***')
+            dadosSorteados = sortear3Dados()
 
-        for i in range(3):
+        # for i in range(3):
+        for i in range(len(dadosSorteados)):
             # Dado Verde
             if dadosSorteados[i] == 'CPCTPC':
                 corDado = 'Verde'
@@ -196,14 +203,19 @@ while not WIN:
                 else:
                     tiro += 1
 
-        placar[playerAtual] = cerebro, passo, tiro
+        # placar[playerAtual] = cerebro, passo, tiro
         placar[playerAtual] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
         print('placar:', placar)
 
         if placar[playerAtual]['tiro'] >= 3:
             jogadorPerdeu(playerAtual)
+            break
 
         if placar[playerAtual]['cerebro'] >= 13:
-            jogadorVenceu()
+            WIN = jogadorVenceu(playerAtual)
+            print(placar)
+            break
+
         if input("Deseja continuar jogando? (s/n): ") == "n":
+            copo.clear()
             break
