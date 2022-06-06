@@ -2,14 +2,14 @@
 # Aluno: José Franciel Pires de Oliveira
 import random
 
-player = ''
+plr = ''
 cerebro = 0
 passo = 0
 tiro = 0
-dictPlayers = {}
+dic_players = {}
 placar = {}
 copo = []
-playerAtual = ''
+player = ''
 dadoVerde = ('CPCTPC')
 dadoAmarelo = ('TPCTPC')
 dadoVermelho = ('TPTCPT')
@@ -63,7 +63,9 @@ def sortearDadoVermelho():
 
 # Função
 def jogadorPerdeu(player_atual):
-    dictPlayers.pop(player_atual)
+    print('usuario a ser removido:',player_atual)
+    print('dicionario players', dic_players)
+    dic_players.pop(player_atual)
     print(f"Jogador {player_atual} perdeu!")
     return None
 
@@ -75,12 +77,18 @@ def jogadorVenceu(player_atual):
 
 
 # sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente
-def sortear3Dados():
+def sortear3Dados(copo):
     for i in range(3):
-        rnd = random.randint(0, 12)
+        # TODO depois da primeiro vez diminuir para 9 e assim por diante, a pilha do random diminui a cada chamada
+        # rnd = random.randint(0, 12)
+        # print('tamanho copo antes', len(copo))
+        # print('copo antes', copo)
+        rnd = random.randint(0, int(len(copo)) - int(1))
         dado = copo[rnd]
         dadosSorteados.append(dado)
         copo.remove(dado)
+        # print('copo depois', copo)
+        # print('tamanho copo depois', len(copo))
     print("dadosSorteados: ", dadosSorteados)
     print("Copo com dados removidos:", copo)
     return list(dadosSorteados)
@@ -95,19 +103,19 @@ while int(qtdPlayers) < 2:
 
 # Enquanto a quantidade de players estiver menor que a quantidade Total de Players
 print("*** Cadastro de Players ***")
-while int(len(dictPlayers) + 1) <= int(qtdPlayers):
-    player = input('Nome do ' + str(len(dictPlayers) + 1) + 'º Player: \n')
-    if player in dictPlayers:
+while int(len(dic_players) + 1) <= int(qtdPlayers):
+    plr = input('Nome do ' + str(len(dic_players) + 1) + 'º Player: \n')
+    if plr in dic_players:
         print('Player já existe! Informe outro nome.\n')
     else:
-        dictPlayers[player] = cerebro, passo, tiro
+        dic_players[plr] = cerebro, passo, tiro
     # dsplacar['Franciel'] = 1, 2, 3
     # if input("Deseja cadastrar um novo contato (s/n): ") == "n":
-    if int(len(dictPlayers) + 1) <= int(qtdPlayers):
-        print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(dictPlayers))}")
+    if int(len(dic_players) + 1) <= int(qtdPlayers):
+        print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(dic_players))}")
     else:
         break
-print(dictPlayers)
+print(dic_players)
 
 print("*** Iniciando o jogo ***")
 
@@ -118,12 +126,12 @@ addDadosCopo()
 # Mostra Copo
 mostraCopo()
 
-while not WIN or not list(dictPlayers.keys()):
+while not WIN or not list(dic_players.keys()):
     # Sorteia qual jogador começa o jogo
-    playerAtual = random.choice(list(dictPlayers.keys()))
-    print(f"Jogador atual:{playerAtual}")
-    lastPlayed = playerAtual
-    dictPlayers.pop(playerAtual)
+    player = random.choice(list(dic_players.keys()))
+    print(f"Jogador atual:{player}")
+    lastPlayed = player
+    dic_players.pop(player)
 
     # TODO implementar verificação do copo vazio
     while True:
@@ -132,9 +140,9 @@ while not WIN or not list(dictPlayers.keys()):
             print('*** O Copo está vazio! ***')
             copo.clear()
             addDadosCopo()
-            dadosSorteados = sortear3Dados()
+            dadosSorteados = sortear3Dados(copo)
         else:
-            dadosSorteados = sortear3Dados()
+            dadosSorteados = sortear3Dados(copo)
 
         # for i in range(3):
         for i in range(len(dadosSorteados)):
@@ -204,15 +212,15 @@ while not WIN or not list(dictPlayers.keys()):
                     tiro += 1
 
         # placar[playerAtual] = cerebro, passo, tiro
-        placar[playerAtual] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
+        placar[player] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
         print('placar:', placar)
 
-        if placar[playerAtual]['tiro'] >= 3:
-            jogadorPerdeu(playerAtual)
+        if placar[player]['tiro'] >= 3:
+            jogadorPerdeu(player)
             break
 
-        if placar[playerAtual]['cerebro'] >= 13:
-            WIN = jogadorVenceu(playerAtual)
+        if placar[player]['cerebro'] >= 13:
+            WIN = jogadorVenceu(player)
             print(placar)
             break
 
