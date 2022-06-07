@@ -99,9 +99,6 @@ def sortearDadoVermelho():
     return faceSorteadoVermelho
 
 
-# TODO Separar placar dos jogadores
-# TODO Placar unificado
-
 # Para todos os usuários faça
 for i in range(len(listaPlayers)):
     player = listaPlayers[i]

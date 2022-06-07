@@ -79,20 +79,14 @@ def jogadorVenceu(player_atual):
 # sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente
 def sortear3Dados(copo):
     for i in range(3):
-        # TODO depois da primeiro vez diminuir para 9 e assim por diante, a pilha do random diminui a cada chamada
-        # rnd = random.randint(0, 12)
-        # print('tamanho copo antes', len(copo))
-        # print('copo antes', copo)
         rnd = random.randint(0, int(len(copo)) - int(1))
-        # rnd = random.randint(0, int(len(copo)))
         dado = copo[rnd]
         dadosSorteados.append(dado)
         copo.remove(dado)
-        # print('copo depois', copo)
-        # print('tamanho copo depois', len(copo))
     print("dadosSorteados: ", dadosSorteados)
     print("Copo com dados removidos:", copo)
     return list(dadosSorteados)
+
 
 # Solicita a quantidade Total de Players
 qtdPlayers = input('Informe a quantidade de Players \n')
@@ -116,6 +110,7 @@ while int(len(dic_players) + 1) <= int(qtdPlayers):
         print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(dic_players))}")
     else:
         break
+
 print(dic_players)
 
 print("*** Iniciando o jogo ***")
@@ -141,7 +136,6 @@ while not WIN or not list(dic_players.keys()):
     passo = 0
     tiro = 0
 
-    # TODO implementar verificação do copo vazio
     while True:
         # Se copo estiver com 2 ou menos preencha novamente
         if len(copo) <= 2:
@@ -236,4 +230,3 @@ while not WIN or not list(dic_players.keys()):
         if input("Deseja continuar jogando? (s/n): ") == "n":
             copo.clear()
             break
-
