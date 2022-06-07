@@ -62,11 +62,11 @@ def sortearDadoVermelho():
 
 
 # Função
-def jogadorPerdeu(player_atual):
-    print('usuario a ser removido:',player_atual)
+def jogadorPerdeu(player):
+    print('usuario a ser removido:', player)
     print('dicionario players', dic_players)
-    dic_players.pop(player_atual)
-    print(f"Jogador {player_atual} perdeu!")
+    # dic_players.pop(player)
+    print(f"Jogador {player} perdeu!")
     return None
 
 
@@ -84,6 +84,7 @@ def sortear3Dados(copo):
         # print('tamanho copo antes', len(copo))
         # print('copo antes', copo)
         rnd = random.randint(0, int(len(copo)) - int(1))
+        # rnd = random.randint(0, int(len(copo)))
         dado = copo[rnd]
         dadosSorteados.append(dado)
         copo.remove(dado)
@@ -127,17 +128,25 @@ addDadosCopo()
 mostraCopo()
 
 while not WIN or not list(dic_players.keys()):
-    # Sorteia qual jogador começa o jogo
+    if not list(dic_players.keys()):
+        print('O jogo foi terminado prematuramente')
+        break
+    # Sorteia um novo jogador e começa o jogo
     player = random.choice(list(dic_players.keys()))
     print(f"Jogador atual:{player}")
     lastPlayed = player
     dic_players.pop(player)
+
+    cerebro = 0
+    passo = 0
+    tiro = 0
 
     # TODO implementar verificação do copo vazio
     while True:
         # Se copo estiver com 2 ou menos preencha novamente
         if len(copo) <= 2:
             print('*** O Copo está vazio! ***')
+            dadosSorteados.clear()
             copo.clear()
             addDadosCopo()
             dadosSorteados = sortear3Dados(copo)
@@ -215,15 +224,16 @@ while not WIN or not list(dic_players.keys()):
         placar[player] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
         print('placar:', placar)
 
+        # Condição de Derrota
         if placar[player]['tiro'] >= 3:
             jogadorPerdeu(player)
             break
-
+        # Condição de Vitória
         if placar[player]['cerebro'] >= 13:
             WIN = jogadorVenceu(player)
             print(placar)
             break
-
         if input("Deseja continuar jogando? (s/n): ") == "n":
             copo.clear()
             break
+
