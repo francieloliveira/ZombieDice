@@ -1,26 +1,31 @@
 # Curso: Gestão da Tecnologia da Informação
 # Aluno: José Franciel Pires de Oliveira
+# TODO Verificar lista de dados jogados (introduzido o clear no perder(verificar))
+# TODO Verificar o Dicionario Players (necessidade)
+# TODO Verificar incio de nova rodada (sem término prematuro) "passar a vez sem retirar?"
+
 import random
 
-plr = ''
 cerebro = 0
 passo = 0
 tiro = 0
 dic_players = {}
 placar = {}
 copo = []
-player = ''
 dadoVerde = ('CPCTPC')
 dadoAmarelo = ('TPCTPC')
 dadoVermelho = ('TPTCPT')
 corDado: str = ''
 WIN = False
 dadosSorteados = []
-rnd = int
 
 
-# Função para Adicionar 13 dados ao Copo
-def addDadosCopo():
+def addDadosCopo() -> None:
+    """
+    Função para Adicionar 13 dados ao Copo.
+
+    :return: None
+    """
     for i in range(6):
         copo.append(dadoVerde)
     for i in range(4):
@@ -30,62 +35,105 @@ def addDadosCopo():
     return None
 
 
-# Função para Mostrar Copo
-def mostraCopo():
+def mostraCopo() -> None:
+    """
+    Função para Mostrar Copo.
+
+    :return: None
+    """
     for i in range(len(copo)):
-        print(f"indice: {i} Copo: {copo[i]}")
+        print(f"Index: {i} Copo: {copo[i]}")
     return None
 
 
-# Função para Sortear face do dado Verde
-def sortearDadoVerde():
-    faceSorteadoVerde = random.choice(dadoVerde)
+def sortearDadoVerde() -> str:
+    """
+    Função para Sortear face do dado Verde.
+
+    :return: Retorna a face do dado Sorteado Verde
+    """
+    face_sorteado_verde = random.choice(dadoVerde)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(faceSorteadoVerde))
-    return faceSorteadoVerde
+    print('face sorteada: {}'.format(face_sorteado_verde))
+    return face_sorteado_verde
 
 
-# Função para Sortear face do dado Amarelo
-def sortearDadoAmarelo():
-    faceSorteadoAmarelo = random.choice(dadoAmarelo)
+def sortearDadoAmarelo() -> str:
+    """
+    Função para Sortear face do dado Amarelo.
+
+    :return: Retorna a face do dado Sorteado Amarelo
+    """
+    face_sorteado_amarelo = random.choice(dadoAmarelo)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(faceSorteadoAmarelo))
-    return faceSorteadoAmarelo
+    print('face sorteada: {}'.format(face_sorteado_amarelo))
+    return face_sorteado_amarelo
 
 
-# Função para Sortear face do dado Vermelho
-def sortearDadoVermelho():
-    faceSorteadoVermelho = random.choice(dadoVermelho)
+def sortearDadoVermelho() -> str:
+    """
+    Função para Sortear face do dado Vermelho
+
+    :return: Retorna a face do dado Sorteado Vermelho
+    """
+    face_sorteado_vermelho = random.choice(dadoVermelho)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(faceSorteadoVermelho))
-    return faceSorteadoVermelho
+    print('face sorteada: {}'.format(face_sorteado_vermelho))
+    return face_sorteado_vermelho
 
 
-# Função
-def jogadorPerdeu(player):
-    print('usuario a ser removido:', player)
-    print('dicionario players', dic_players)
+def playerPerdeu(plyr_loser: str) -> None:
+    """
+    Identifica que o Player perdeu.
+
+    :param plyr_loser: Nome do usuário que perdeu.
+    :return: None
+    """
+    # print('Usuário a ser removido:', plyr_loser)
+    print('Dicionario Players', dic_players)
     # dic_players.pop(player)
-    print(f"Jogador {player} perdeu!")
+    print(f"Jogador {plyr_loser} perdeu!")
     return None
 
 
-def jogadorVenceu(player_atual):
-    print(f"Jogador {player_atual} Venceu")
-    WIN = True
-    return WIN
+def jogadorVenceu(plyr_win: str) -> bool:
+    """
+    Condição de Vitória do jogo é atingida.
+
+    :param plyr_win: Recebe o nome do Player vencedor.
+    :return: Variável WIN para encerrar a partida.
+    """
+    print(f"Jogador {plyr_win} Venceu")
+    win = True
+    return win
 
 
-# sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente
-def sortear3Dados(copo):
+def sortear3Dados(lista_dados_copo: list) -> list:
+    """
+    Sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente.
+    
+    :param lista_dados_copo: Recebe o Copo para ser sorteado 3 dados dele
+    :return: Retorna lista dos 3 dados sorteados
+    """
     for i in range(3):
-        rnd = random.randint(0, int(len(copo)) - int(1))
-        dado = copo[rnd]
+        rnd = random.randint(0, int(len(lista_dados_copo)) - int(1))
+        dado = lista_dados_copo[rnd]
         dadosSorteados.append(dado)
-        copo.remove(dado)
+        lista_dados_copo.remove(dado)
     print("dadosSorteados: ", dadosSorteados)
-    print("Copo com dados removidos:", copo)
+    print("Copo com dados removidos:", lista_dados_copo)
     return list(dadosSorteados)
+
+
+def showPlacar() -> None:
+    """
+    Mostra o placar dos jogadores
+
+    :return: None
+    """
+    placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
+    print('placar:', placar)
+    return None
 
 
 # Solicita a quantidade Total de Players
@@ -93,7 +141,7 @@ qtdPlayers = input('Informe a quantidade de Players \n')
 
 # Solicita quantidade de usuários superior a 2
 while int(qtdPlayers) < 2:
-    print("Aquantidade de Usuários deve ser maior que 2!")
+    print("A quantidade de Usuários deve ser maior que 2!")
     qtdPlayers = input('Informe a quantidade de Players \n')
 
 # Enquanto a quantidade de players estiver menor que a quantidade Total de Players
@@ -104,8 +152,6 @@ while int(len(dic_players) + 1) <= int(qtdPlayers):
         print('Player já existe! Informe outro nome.\n')
     else:
         dic_players[plr] = cerebro, passo, tiro
-    # dsplacar['Franciel'] = 1, 2, 3
-    # if input("Deseja cadastrar um novo contato (s/n): ") == "n":
     if int(len(dic_players) + 1) <= int(qtdPlayers):
         print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(dic_players))}")
     else:
@@ -127,10 +173,10 @@ while not WIN or not list(dic_players.keys()):
         print('O jogo foi terminado prematuramente')
         break
     # Sorteia um novo jogador e começa o jogo
-    player = random.choice(list(dic_players.keys()))
-    print(f"Jogador atual:{player}")
-    lastPlayed = player
-    dic_players.pop(player)
+    playerName = random.choice(list(dic_players.keys()))
+    print(f"Jogador atual:{playerName}")
+    lastPlayed = playerName
+    dic_players.pop(playerName)
 
     cerebro = 0
     passo = 0
@@ -215,18 +261,27 @@ while not WIN or not list(dic_players.keys()):
                     tiro += 1
 
         # placar[playerAtual] = cerebro, passo, tiro
-        placar[player] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
-        print('placar:', placar)
+        # placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
+        # print('placar:', placar)
+        showPlacar()
 
         # Condição de Derrota
-        if placar[player]['tiro'] >= 3:
-            jogadorPerdeu(player)
+        if placar[playerName]['tiro'] >= 3:
+            playerPerdeu(playerName)
+            # testando o clear do copo e da lista
+            dadosSorteados.clear()
+            copo.clear()
             break
+
         # Condição de Vitória
-        if placar[player]['cerebro'] >= 13:
-            WIN = jogadorVenceu(player)
-            print(placar)
+        if placar[playerName]['cerebro'] >= 13:
+            WIN = jogadorVenceu(playerName)
+            # print(placar)
+            showPlacar()
             break
+
+        # Deseja continuar?
         if input("Deseja continuar jogando? (s/n): ") == "n":
+            showPlacar()
             copo.clear()
             break
