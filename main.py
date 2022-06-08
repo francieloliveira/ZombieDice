@@ -5,6 +5,7 @@
 # TODO Verificar incio de nova rodada (sem término prematuro) "passar a vez sem retirar?"
 
 import random
+from typing import Type
 
 cerebro = 0
 passo = 0
@@ -18,6 +19,7 @@ dadoVermelho = ('TPTCPT')
 corDado: str = ''
 WIN = False
 dadosSorteados = []
+status: str = ''
 
 
 def addDadosCopo() -> None:
@@ -35,7 +37,7 @@ def addDadosCopo() -> None:
     return None
 
 
-def mostraCopo() -> None:
+def showCopo() -> None:
     """
     Função para Mostrar Copo.
 
@@ -43,6 +45,17 @@ def mostraCopo() -> None:
     """
     for i in range(len(copo)):
         print(f"Index: {i} Copo: {copo[i]}")
+    return None
+
+
+def showPlacar() -> None:
+    """
+    Mostra o placar dos jogadores
+
+    :return: None
+    """
+    placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
+    print('placar:', placar)
     return None
 
 
@@ -82,35 +95,33 @@ def sortearDadoVermelho() -> str:
     return face_sorteado_vermelho
 
 
-def playerPerdeu(plyr_loser: str) -> None:
+# def playerPerdeu(plyr_loser: str) -> None:
+#     """
+#     Identifica que o Player perdeu.
+#
+#     :param plyr_loser: Nome do usuário que perdeu.
+#     :return: None
+#     """
+#     print('Dicionario Players', dic_players)
+#     print(f"Jogador {plyr_loser} perdeu!")
+#     return None
+
+
+# def jogadorVenceu(plyr_win: str) -> bool:
+#     """
+#     Condição de Vitória do jogo é atingida.
+#
+#     :param plyr_win: Recebe o nome do Player vencedor.
+#     :return: Variável WIN para encerrar a partida.
+#     """
+#     print(f"Jogador {plyr_win} Venceu")
+#     win = True
+#     return win
+
+
+def retira3DadosCopo(lista_dados_copo: list) -> list:
     """
-    Identifica que o Player perdeu.
-
-    :param plyr_loser: Nome do usuário que perdeu.
-    :return: None
-    """
-    # print('Usuário a ser removido:', plyr_loser)
-    print('Dicionario Players', dic_players)
-    # dic_players.pop(player)
-    print(f"Jogador {plyr_loser} perdeu!")
-    return None
-
-
-def jogadorVenceu(plyr_win: str) -> bool:
-    """
-    Condição de Vitória do jogo é atingida.
-
-    :param plyr_win: Recebe o nome do Player vencedor.
-    :return: Variável WIN para encerrar a partida.
-    """
-    print(f"Jogador {plyr_win} Venceu")
-    win = True
-    return win
-
-
-def sortear3Dados(lista_dados_copo: list) -> list:
-    """
-    Sorteia 3 dados e retira-os da lista de dados a serem sorteados novamente.
+    Retira 3 dados do e retira-os da lista de dados a serem sorteados novamente.
     
     :param lista_dados_copo: Recebe o Copo para ser sorteado 3 dados dele
     :return: Retorna lista dos 3 dados sorteados
@@ -125,15 +136,29 @@ def sortear3Dados(lista_dados_copo: list) -> list:
     return list(dadosSorteados)
 
 
-def showPlacar() -> None:
+def playerStatus(plyr_name: str) -> str:
     """
-    Mostra o placar dos jogadores
+    Verifica o status do jogador atual
 
-    :return: None
+    :param plyr_name: recebe o nome do player
+    :return: retorna o status atual do player
     """
-    placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
-    print('placar:', placar)
-    return None
+
+    global status
+    if placar[plyr_name]['tiro'] >= 3:
+        dadosSorteados.clear()
+        copo.clear()
+        status = "loose"
+        print('Dicionario Players', dic_players)
+        print(f"Jogador {plyr_name} perdeu!")
+    elif placar[plyr_name]['cerebro'] >= 13:
+        print(f"Jogador {plyr_name} Venceu!")
+        showPlacar()
+        status = "win"
+    else:
+        status = "jogando"
+
+    return status
 
 
 # Solicita a quantidade Total de Players
@@ -166,11 +191,12 @@ print("*** Inserindo dados no copo ***")
 addDadosCopo()
 
 # Mostra Copo
-mostraCopo()
+showCopo()
 
 while not WIN or not list(dic_players.keys()):
     if not list(dic_players.keys()):
-        print('O jogo foi terminado prematuramente')
+        print('O jogo foi terminou!')
+        showPlacar()
         break
     # Sorteia um novo jogador e começa o jogo
     playerName = random.choice(list(dic_players.keys()))
@@ -189,11 +215,10 @@ while not WIN or not list(dic_players.keys()):
             dadosSorteados.clear()
             copo.clear()
             addDadosCopo()
-            dadosSorteados = sortear3Dados(copo)
+            dadosSorteados = retira3DadosCopo(copo)
         else:
-            dadosSorteados = sortear3Dados(copo)
+            dadosSorteados = retira3DadosCopo(copo)
 
-        # for i in range(3):
         for i in range(len(dadosSorteados)):
             # Dado Verde
             if dadosSorteados[i] == 'CPCTPC':
@@ -265,19 +290,13 @@ while not WIN or not list(dic_players.keys()):
         # print('placar:', placar)
         showPlacar()
 
-        # Condição de Derrota
-        if placar[playerName]['tiro'] >= 3:
-            playerPerdeu(playerName)
-            # testando o clear do copo e da lista
-            dadosSorteados.clear()
-            copo.clear()
+        # Verifica status do jogador
+        status = playerStatus(playerName)
+        print('status player: ', status)
+        if status == "loose":
             break
-
-        # Condição de Vitória
-        if placar[playerName]['cerebro'] >= 13:
-            WIN = jogadorVenceu(playerName)
-            # print(placar)
-            showPlacar()
+        if status == "win":
+            WIN = True
             break
 
         # Deseja continuar?
