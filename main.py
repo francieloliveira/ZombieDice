@@ -1,11 +1,9 @@
 # Curso: Gestão da Tecnologia da Informação
 # Aluno: José Franciel Pires de Oliveira
-# TODO Verificar lista de dados jogados (introduzido o clear no perder(verificar))
-# TODO Verificar o Dicionario Players (necessidade)
-# TODO Verificar incio de nova rodada (sem término prematuro) "passar a vez sem retirar?"
+
 
 import random
-from typing import Type
+import time
 
 cerebro = 0
 passo = 0
@@ -24,15 +22,15 @@ status: str = ''
 
 def addDadosCopo() -> None:
     """
-    Função para Adicionar 13 dados ao Copo.
+        Função para Adicionar 13 dados ao Copo.
 
-    :return: None
+    :return: None.
     """
-    for i in range(6):
+    for j in range(6):
         copo.append(dadoVerde)
-    for i in range(4):
+    for k in range(4):
         copo.append(dadoAmarelo)
-    for i in range(3):
+    for m in range(3):
         copo.append(dadoVermelho)
     return None
 
@@ -41,29 +39,69 @@ def showCopo() -> None:
     """
     Função para Mostrar Copo.
 
-    :return: None
+    :return: None.
     """
-    for i in range(len(copo)):
-        print(f"Index: {i} Copo: {copo[i]}")
+    for n in range(len(copo)):
+        print(f"Index: {n} Copo: {copo[n]}")
     return None
 
 
 def showPlacar() -> None:
     """
-    Mostra o placar dos jogadores
+    Mostra o placar dos jogadores.
 
-    :return: None
+    :return: None.
     """
     placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
     print('placar:', placar)
     return None
 
 
+def showPlayers() -> None:
+    """
+    Mostra os Jogadores Cadastrados.
+
+    :return: None.
+    """
+    print("\n::::::::::::::::::::::::::::::::::::")
+    print(f'{":: ":<12}{"Jogadores Cadastrados"}{" ::":>12}')
+    print(dic_players)
+    print("::::::::::::::::::::::::::::::::::::")
+
+    pass
+
+
+def showStatusPlayer(plr_name: str) -> str:
+    """
+    Verifica o estado do jogador atual.
+
+    :param plr_name: recebe o nome do jogador.
+    :return: retorna o estado do jogador.
+    """
+
+    global status
+    if placar[plr_name]['tiro'] >= 3:
+        dadosSorteados.clear()
+        copo.clear()
+        status = "loose"
+        print('Dicionario Players', dic_players)
+        print(f"Jogador {plr_name} perdeu!")
+        time.sleep(3)
+    elif placar[plr_name]['cerebro'] >= 13:
+        print(f"Jogador {plr_name} Venceu!")
+        showPlacar()
+        status = "win"
+    else:
+        status = "jogando"
+
+    return status
+
+
 def sortearDadoVerde() -> str:
     """
     Função para Sortear face do dado Verde.
 
-    :return: Retorna a face do dado Sorteado Verde
+    :return: retorna a face do dado Sorteado Verde.
     """
     face_sorteado_verde = random.choice(dadoVerde)
     print('Dado sorteado: {}'.format(corDado))
@@ -75,7 +113,7 @@ def sortearDadoAmarelo() -> str:
     """
     Função para Sortear face do dado Amarelo.
 
-    :return: Retorna a face do dado Sorteado Amarelo
+    :return: retorna a face do dado Sorteado Amarelo.
     """
     face_sorteado_amarelo = random.choice(dadoAmarelo)
     print('Dado sorteado: {}'.format(corDado))
@@ -85,9 +123,9 @@ def sortearDadoAmarelo() -> str:
 
 def sortearDadoVermelho() -> str:
     """
-    Função para Sortear face do dado Vermelho
+    Função para Sortear face do dado Vermelho.
 
-    :return: Retorna a face do dado Sorteado Vermelho
+    :return: retorna a face do dado Sorteado Vermelho.
     """
     face_sorteado_vermelho = random.choice(dadoVermelho)
     print('Dado sorteado: {}'.format(corDado))
@@ -95,38 +133,14 @@ def sortearDadoVermelho() -> str:
     return face_sorteado_vermelho
 
 
-# def playerPerdeu(plyr_loser: str) -> None:
-#     """
-#     Identifica que o Player perdeu.
-#
-#     :param plyr_loser: Nome do usuário que perdeu.
-#     :return: None
-#     """
-#     print('Dicionario Players', dic_players)
-#     print(f"Jogador {plyr_loser} perdeu!")
-#     return None
-
-
-# def jogadorVenceu(plyr_win: str) -> bool:
-#     """
-#     Condição de Vitória do jogo é atingida.
-#
-#     :param plyr_win: Recebe o nome do Player vencedor.
-#     :return: Variável WIN para encerrar a partida.
-#     """
-#     print(f"Jogador {plyr_win} Venceu")
-#     win = True
-#     return win
-
-
 def retira3DadosCopo(lista_dados_copo: list) -> list:
     """
     Retira 3 dados do e retira-os da lista de dados a serem sorteados novamente.
     
-    :param lista_dados_copo: Recebe o Copo para ser sorteado 3 dados dele
-    :return: Retorna lista dos 3 dados sorteados
+    :param lista_dados_copo: recebe o Copo para ser sorteado 3 dados dele.
+    :return: retorna lista dos 3 dados sorteados.
     """
-    for i in range(3):
+    for p in range(3):
         rnd = random.randint(0, int(len(lista_dados_copo)) - int(1))
         dado = lista_dados_copo[rnd]
         dadosSorteados.append(dado)
@@ -134,31 +148,6 @@ def retira3DadosCopo(lista_dados_copo: list) -> list:
     print("dadosSorteados: ", dadosSorteados)
     print("Copo com dados removidos:", lista_dados_copo)
     return list(dadosSorteados)
-
-
-def playerStatus(plyr_name: str) -> str:
-    """
-    Verifica o status do jogador atual
-
-    :param plyr_name: recebe o nome do player
-    :return: retorna o status atual do player
-    """
-
-    global status
-    if placar[plyr_name]['tiro'] >= 3:
-        dadosSorteados.clear()
-        copo.clear()
-        status = "loose"
-        print('Dicionario Players', dic_players)
-        print(f"Jogador {plyr_name} perdeu!")
-    elif placar[plyr_name]['cerebro'] >= 13:
-        print(f"Jogador {plyr_name} Venceu!")
-        showPlacar()
-        status = "win"
-    else:
-        status = "jogando"
-
-    return status
 
 
 # Solicita a quantidade Total de Players
@@ -182,7 +171,8 @@ while int(len(dic_players) + 1) <= int(qtdPlayers):
     else:
         break
 
-print(dic_players)
+# Mostra os jogadores cadastrados
+showPlayers()
 
 print("*** Iniciando o jogo ***")
 
@@ -290,8 +280,8 @@ while not WIN or not list(dic_players.keys()):
         # print('placar:', placar)
         showPlacar()
 
-        # Verifica status do jogador
-        status = playerStatus(playerName)
+        # Verifica estado do jogador
+        status = showStatusPlayer(playerName)
         print('status player: ', status)
         if status == "loose":
             break
