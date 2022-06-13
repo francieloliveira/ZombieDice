@@ -209,7 +209,8 @@ while not WIN or not list(dic_players.keys()):
         else:
             dadosSorteados = retira3DadosCopo(copo)
 
-        for i in range(len(dadosSorteados)):
+        # for i in range(len(dadosSorteados)):
+        for i in range(3):
             # Dado Verde
             if dadosSorteados[i] == 'CPCTPC':
                 corDado = 'Verde'
