@@ -291,7 +291,9 @@ while not WIN or not list(dic_players.keys()):
             break
 
         # Deseja continuar?
-        if input("Deseja continuar jogando? (s/n): ") == "n":
+        status = input("Deseja continuar jogando? (s/n): ")
+        status.lower()
+        if status == "n":
             showPlacar()
             copo.clear()
             break
