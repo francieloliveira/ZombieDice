@@ -42,7 +42,9 @@ def showCopo() -> None:
     :return: None.
     """
     for n in range(len(copo)):
-        print(f"Index: {n} Copo: {copo[n]}")
+        print(f"Index: {n} Dado: {copo[n]}")
+
+    time.sleep(3)
     return None
 
 
@@ -53,7 +55,8 @@ def showPlacar() -> None:
     :return: None.
     """
     placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
-    print('placar:', placar)
+    print('Placar:', placar)
+    time.sleep(3)
     return None
 
 
@@ -63,11 +66,9 @@ def showPlayers() -> None:
 
     :return: None.
     """
-    print("\n::::::::::::::::::::::::::::::::::::")
-    print(f'{":: ":<12}{"Jogadores Cadastrados"}{" ::":>12}')
+    print(f'{"*** Jogadores Cadastrados ***"}')
     print(dic_players)
-    print("::::::::::::::::::::::::::::::::::::")
-
+    time.sleep(3)
     pass
 
 
@@ -75,25 +76,23 @@ def showStatusPlayer(plr_name: str) -> str:
     """
     Verifica o estado do jogador atual.
 
+    :rtype: str
     :param plr_name: recebe o nome do jogador.
     :return: retorna o estado do jogador.
     """
-
     global status
     if placar[plr_name]['tiro'] >= 3:
         dadosSorteados.clear()
         copo.clear()
+        print(f"Jogador: \"{plr_name}\" Perdeu!")
+        showPlacar()
         status = "loose"
-        print('Dicionario Players', dic_players)
-        print(f"Jogador {plr_name} perdeu!")
-        time.sleep(3)
     elif placar[plr_name]['cerebro'] >= 13:
-        print(f"Jogador {plr_name} Venceu!")
+        print(f"Jogador: \"{plr_name}\" Venceu!")
         showPlacar()
         status = "win"
     else:
         status = "jogando"
-
     return status
 
 
@@ -105,7 +104,7 @@ def sortearDadoVerde() -> str:
     """
     face_sorteado_verde = random.choice(dadoVerde)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(face_sorteado_verde))
+    print('Face sorteada: {}'.format(face_sorteado_verde))
     return face_sorteado_verde
 
 
@@ -117,7 +116,7 @@ def sortearDadoAmarelo() -> str:
     """
     face_sorteado_amarelo = random.choice(dadoAmarelo)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(face_sorteado_amarelo))
+    print('Face sorteada: {}'.format(face_sorteado_amarelo))
     return face_sorteado_amarelo
 
 
@@ -129,7 +128,7 @@ def sortearDadoVermelho() -> str:
     """
     face_sorteado_vermelho = random.choice(dadoVermelho)
     print('Dado sorteado: {}'.format(corDado))
-    print('face sorteada: {}'.format(face_sorteado_vermelho))
+    print('Face sorteada: {}'.format(face_sorteado_vermelho))
     return face_sorteado_vermelho
 
 
@@ -140,13 +139,16 @@ def retira3DadosCopo(lista_dados_copo: list) -> list:
     :param lista_dados_copo: recebe o Copo para ser sorteado 3 dados dele.
     :return: retorna lista dos 3 dados sorteados.
     """
+    print("*** Sorteando 3 dados! ***")
+    time.sleep(3)
     for p in range(3):
         rnd = random.randint(0, int(len(lista_dados_copo)) - int(1))
         dado = lista_dados_copo[rnd]
         dadosSorteados.append(dado)
         lista_dados_copo.remove(dado)
-    print("dadosSorteados: ", dadosSorteados)
-    print("Copo com dados removidos:", lista_dados_copo)
+    # print("Dados Sorteados: ", dadosSorteados)
+    # print("Copo com dados removidos:", lista_dados_copo)
+    # time.sleep(3)
     return list(dadosSorteados)
 
 
@@ -175,9 +177,11 @@ while int(len(dic_players) + 1) <= int(qtdPlayers):
 showPlayers()
 
 print("*** Iniciando o jogo ***")
+time.sleep(3)
 
 # Add 13 dados no copo
 print("*** Inserindo dados no copo ***")
+time.sleep(3)
 addDadosCopo()
 
 # Mostra Copo
@@ -190,7 +194,8 @@ while not WIN or not list(dic_players.keys()):
         break
     # Sorteia um novo jogador e começa o jogo
     playerName = random.choice(list(dic_players.keys()))
-    print(f"Jogador atual:{playerName}")
+    print(f"*** Jogador atual: \"{playerName}\" ***")
+    time.sleep(3)
     lastPlayed = playerName
     dic_players.pop(playerName)
 
@@ -201,7 +206,7 @@ while not WIN or not list(dic_players.keys()):
     while True:
         # Se copo estiver com 2 ou menos preencha novamente
         if len(copo) <= 2:
-            print('*** O Copo está vazio! ***')
+            # print('*** O Copo está vazio! ***')
             dadosSorteados.clear()
             copo.clear()
             addDadosCopo()
@@ -209,7 +214,6 @@ while not WIN or not list(dic_players.keys()):
         else:
             dadosSorteados = retira3DadosCopo(copo)
 
-        # for i in range(len(dadosSorteados)):
         for i in range(3):
             # Dado Verde
             if dadosSorteados[i] == 'CPCTPC':
@@ -220,15 +224,6 @@ while not WIN or not list(dic_players.keys()):
                     cerebro += 1
                 elif faceSorteadoVerde == 'P':
                     passo += 1
-                    # while faceSorteadoVerde == 'P':
-                    #     print("Precisa sortear novamente")
-                    #     faceSorteadoVerde = sortearDadoVerde()
-                    #     if faceSorteadoVerde == 'C':
-                    #         cerebro += 1
-                    #         break
-                    #     if faceSorteadoVerde == 'T':
-                    #         tiro += 1
-                    #         break
                 else:
                     tiro += 1
 
@@ -242,15 +237,6 @@ while not WIN or not list(dic_players.keys()):
                     cerebro += 1
                 elif faceSorteadoAmarelo == 'P':
                     passo += 1
-                    # while faceSorteadoAmarelo == 'P':
-                    #     print("Precisa sortear novamente")
-                    #     faceSorteadoAmarelo = sortearDadoAmarelo()
-                    #     if faceSorteadoAmarelo == 'C':
-                    #         cerebro += 1
-                    #         break
-                    #     if faceSorteadoAmarelo == 'T':
-                    #         tiro += 1
-                    #         break
                 else:
                     tiro += 1
 
@@ -264,26 +250,13 @@ while not WIN or not list(dic_players.keys()):
                     cerebro += 1
                 elif faceSorteadoVermelho == 'P':
                     passo += 1
-                    # while faceSorteadoVermelho == 'P':
-                    #     print("Precisa sortear novamente")
-                    #     faceSorteadoVermelho = sortearDadoVermelho()
-                    #     if faceSorteadoVermelho == 'C':
-                    #         cerebro += 1
-                    #         break
-                    #     if faceSorteadoVermelho == 'T':
-                    #         tiro += 1
-                    #         break
                 else:
                     tiro += 1
 
-        # placar[playerAtual] = cerebro, passo, tiro
-        # placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
-        # print('placar:', placar)
         showPlacar()
 
         # Verifica estado do jogador
         status = showStatusPlayer(playerName)
-        print('status player: ', status)
         if status == "loose":
             break
         if status == "win":
