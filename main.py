@@ -8,7 +8,7 @@ import time
 cerebro = 0
 passo = 0
 tiro = 0
-dic_players = {}
+players = {}
 placar = {}
 copo = []
 dadoVerde = ('CPCTPC')
@@ -55,7 +55,12 @@ def showPlacar() -> None:
     :return: None.
     """
     placar[playerName] = {'cerebro': cerebro, 'passo': passo, 'tiro': tiro}
-    print('Placar:', placar)
+    # print('Placar:', placar)
+    # print('\n')
+    for plc in placar:
+        print("#########################################")
+        print(f'*** Placar: "{plc}" \n*** Cerebro: {placar[plc]["cerebro"]} Passo: {placar[plc]["passo"]} Tiro: {placar[plc]["tiro"]}')
+    print("#########################################")
     time.sleep(3)
     return None
 
@@ -67,7 +72,7 @@ def showPlayers() -> None:
     :return: None.
     """
     print(f'{"*** Jogadores Cadastrados ***"}')
-    print(dic_players)
+    print(players)
     time.sleep(3)
     pass
 
@@ -85,11 +90,12 @@ def showStatusPlayer(plr_name: str) -> str:
         dadosSorteados.clear()
         copo.clear()
         print(f"Jogador: \"{plr_name}\" Perdeu!")
-        showPlacar()
+        time.sleep(3)
         status = "loose"
     elif placar[plr_name]['cerebro'] >= 13:
         print(f"Jogador: \"{plr_name}\" Venceu!")
         showPlacar()
+        time.sleep(3)
         status = "win"
     else:
         status = "jogando"
@@ -132,7 +138,7 @@ def sortearDadoVermelho() -> str:
     return face_sorteado_vermelho
 
 
-def retira3DadosCopo(lista_dados_copo: list) -> list:
+def sortear3Dados(lista_dados_copo: list) -> list:
     """
     Retira 3 dados do e retira-os da lista de dados a serem sorteados novamente.
     
@@ -148,7 +154,6 @@ def retira3DadosCopo(lista_dados_copo: list) -> list:
         lista_dados_copo.remove(dado)
     # print("Dados Sorteados: ", dadosSorteados)
     # print("Copo com dados removidos:", lista_dados_copo)
-    # time.sleep(3)
     return list(dadosSorteados)
 
 
@@ -162,14 +167,14 @@ while int(qtdPlayers) < 2:
 
 # Enquanto a quantidade de players estiver menor que a quantidade Total de Players
 print("*** Cadastro de Players ***")
-while int(len(dic_players) + 1) <= int(qtdPlayers):
-    plr = input('Nome do ' + str(len(dic_players) + 1) + 'º Player: \n')
-    if plr in dic_players:
+while int(len(players) + 1) <= int(qtdPlayers):
+    plr = input('Nome do ' + str(len(players) + 1) + 'º Player: \n')
+    if plr in players:
         print('Player já existe! Informe outro nome.\n')
     else:
-        dic_players[plr] = cerebro, passo, tiro
-    if int(len(dic_players) + 1) <= int(qtdPlayers):
-        print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(dic_players))}")
+        players[plr] = cerebro, passo, tiro
+    if int(len(players) + 1) <= int(qtdPlayers):
+        print(f"Precisa adicionar mais {int(qtdPlayers) - int(len(players))}")
     else:
         break
 
@@ -187,17 +192,17 @@ addDadosCopo()
 # Mostra Copo
 showCopo()
 
-while not WIN or not list(dic_players.keys()):
-    if not list(dic_players.keys()):
+while not WIN or not list(players.keys()):
+    if not list(players.keys()):
         print('O jogo foi terminou!')
         showPlacar()
         break
     # Sorteia um novo jogador e começa o jogo
-    playerName = random.choice(list(dic_players.keys()))
+    playerName = random.choice(list(players.keys()))
     print(f"*** Jogador atual: \"{playerName}\" ***")
     time.sleep(3)
     lastPlayed = playerName
-    dic_players.pop(playerName)
+    players.pop(playerName)
 
     cerebro = 0
     passo = 0
@@ -210,9 +215,9 @@ while not WIN or not list(dic_players.keys()):
             dadosSorteados.clear()
             copo.clear()
             addDadosCopo()
-            dadosSorteados = retira3DadosCopo(copo)
+            dadosSorteados = sortear3Dados(copo)
         else:
-            dadosSorteados = retira3DadosCopo(copo)
+            dadosSorteados = sortear3Dados(copo)
 
         for i in range(3):
             # Dado Verde
@@ -253,6 +258,8 @@ while not WIN or not list(dic_players.keys()):
                 else:
                     tiro += 1
 
+        time.sleep(3)
+
         showPlacar()
 
         # Verifica estado do jogador
@@ -267,6 +274,5 @@ while not WIN or not list(dic_players.keys()):
         status = input("Deseja continuar jogando? (s/n): ")
         status.lower()
         if status == "n":
-            showPlacar()
             copo.clear()
             break
