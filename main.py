@@ -1,7 +1,6 @@
 # Curso: Gestão da Tecnologia da Informação
 # Aluno: José Franciel Pires de Oliveira
 
-
 import random
 import time
 
