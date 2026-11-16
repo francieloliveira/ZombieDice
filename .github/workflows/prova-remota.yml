@@ -1,0 +1,63 @@
+# FRA-620. A prova do merge, no Linux. Instalada pelo TuttiDash
+# (tuttidash/tools/prova-remota-linux); não edite esta cópia.
+# Não testa o app: PR que mexe no app (ou na própria prova) fica vermelho com
+# "precisa da prova no Mac".
+# O evento é pull_request: o token fica só de leitura e não há segredo.
+# O script executado é o blob .github/prova-remota/prova-remota.sh no SHA da base.
+# O código do head entra num container sem rede, só para leitura.
+name: prova-remota
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prova-remota-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  prova-remota:
+    name: prova-remota
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout da base
+        # v4 fixo por SHA. A tag móvel não entra na prova.
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Checkout do head (com histórico, para a lista de arquivos)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: head
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Prova com o blob do script da base
+        env:
+          PROVA_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PROVA_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$PROVA_BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$PROVA_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git -C base rev-parse HEAD)" = "$PROVA_BASE_SHA"
+          test "$(git -C head rev-parse HEAD)" = "$PROVA_HEAD_SHA"
+          # Sem o script na base (o PR que o instala) não há prova: vermelho, e o
+          # dono decide. Nenhum script do head roda.
+          script=".github/prova-remota/prova-remota.sh"
+          if ! git -C base cat-file -e "${PROVA_BASE_SHA}:${script}"; then
+            echo "prova-remota: a base ainda não tem ${script}; precisa da revisão do dono."
+            exit 1
+          fi
+          git -C base cat-file -p "${PROVA_BASE_SHA}:${script}" \
+            | bash -s -- "$GITHUB_WORKSPACE/base" "$GITHUB_WORKSPACE/head"
