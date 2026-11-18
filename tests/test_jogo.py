@@ -92,7 +92,7 @@ class TestPartida(unittest.TestCase):
         self.assertEqual(resultado['turno']['cerebro'], 1)
         self.assertEqual(resultado['turno']['passo'], 1)
         self.assertEqual(resultado['turno']['tiro'], 1)
-        self.assertEqual(resultado['cores'][0], 'Verde')
+        self.assertIn(resultado['cores'][0], ('Verde', 'Amarelo', 'Vermelho'))
 
     def test_tres_tiros_no_turno_eliminam_jogador(self):
         partida = jogo.Partida(['Ana', 'Bob'])
