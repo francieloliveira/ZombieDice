@@ -211,6 +211,29 @@ class IntegratedResumeTests(unittest.TestCase):
             self.assertEqual(observed_order, uninterrupted_order)
             self.assertEqual(observed_order, ["Ana", "Bia", "Caio"])
 
+    def test_resume_stop_resolves_saved_decision_before_any_new_roll(self) -> None:
+        from io import StringIO
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "save.json"
+            game = Game(["Ana", "Bia", "Caio"])
+            game.scores["Ana"] = 2
+            game.current_player = "Bia"
+            game.turn_index = 1
+            game.pending = {"brains": 1, "footprints": 1, "shots": 1}
+            game.carried_dice = [DICE[0]]
+            game.decision_pending = True
+            save_game(game, path)
+
+            output = StringIO()
+            resumed = play(StringIO("s\np\ns\n"), output, path,
+                           lambda cup: cup[0], lambda die: "C")
+
+            self.assertEqual(self.turn_starts(output.getvalue()), ["Caio"])
+            self.assertEqual(resumed.scores, {"Ana": 2, "Bia": 1, "Caio": 0})
+            self.assertNotEqual(resumed.current_player, "Bia")
+
     def test_eliminated_player_is_persisted_and_skipped_after_restart(self) -> None:
         from io import StringIO
         from tempfile import TemporaryDirectory
