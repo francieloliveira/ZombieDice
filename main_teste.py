@@ -27,6 +27,7 @@ class Game:
     current_player: str | None = None
     carried_dice: list[str] = field(default_factory=list)
     cup: list[str] = field(default_factory=list)
+    decision_pending: bool = False
 
     def __post_init__(self) -> None:
         if len(self.players) < 2 or len(set(self.players)) != len(self.players):
@@ -87,7 +88,8 @@ class Game:
     def snapshot(self) -> dict[str, object]:
         return {"players": self.players[:], "scores": dict(self.scores), "eliminated": sorted(self.eliminated),
                 "turn_index": self.turn_index, "current_player": self.current_player,
-                "pending": dict(self.pending), "carried_dice": self.carried_dice[:], "cup": self.cup[:]}
+                "pending": dict(self.pending), "carried_dice": self.carried_dice[:], "cup": self.cup[:],
+                "decision_pending": self.decision_pending}
 
     @classmethod
     def resume(cls, saved: dict[str, object]) -> "Game":
@@ -98,6 +100,7 @@ class Game:
         game.pending = dict(saved["pending"])
         game.carried_dice = list(saved["carried_dice"])
         game.cup = list(saved["cup"])
+        game.decision_pending = bool(saved.get("decision_pending", False))
         current = saved["current_player"]
         game.current_player = current if current not in game.eliminated else game._next_active(game.turn_index + 1)
         return game
@@ -134,6 +137,18 @@ def play(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.stdout,
             players.append(input_stream.readline().strip())
         game = Game(players)
     while game.current_player is not None and max(game.scores.values(), default=0) < 13:
+        if game.decision_pending:
+            output_stream.write("Continuar, parar ou sair? (c/p/s): ")
+            choice = input_stream.readline().strip().lower()
+            if choice == "s":
+                save_game(game, save_path)
+                output_stream.write("Partida salva. Até logo!\n")
+                return game
+            game.decision_pending = False
+            if choice == "p":
+                game.stop_turn()
+            save_game(game, save_path)
+            continue
         rolling_player = game.current_player
         output_stream.write(f"Vez de {rolling_player}; placar {game.scores}; turno {game.pending}\n")
         result = game.toss(chooser, face_roller)
@@ -142,15 +157,7 @@ def play(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.stdout,
         # de receber a escolha parar/continuar para o seu próprio turno.
         if rolling_player in game.eliminated:
             continue
-        output_stream.write("Continuar, parar ou sair? (c/p/s): ")
-        choice = input_stream.readline().strip().lower()
-        if choice == "s":
-            save_game(game, save_path)
-            output_stream.write("Partida salva. Até logo!\n")
-            return game
-        if choice == "p":
-            game.stop_turn()
-        save_game(game, save_path)
+        game.decision_pending = True
     if save_path.exists():
         save_path.unlink()
     output_stream.write(f"Fim da partida. Placar: {game.scores}\n")
@@ -169,7 +176,8 @@ class IntegratedResumeTests(unittest.TestCase):
 
         with TemporaryDirectory() as directory:
             path = Path(directory) / "save.json"
-            # Ana banks 2 brains, Bia rolls a brain, footprint and shot, then exits.
+            # Ana banks 2 brains; Bia rolls a brain, footprint and shot, then exits
+            # while the stop/continue decision is still pending.
             scripted_faces = iter(["C", "C", "T", "C", "P", "T"])
             chooser = lambda cup: cup[0]
             face = lambda die: next(scripted_faces)
@@ -182,25 +190,26 @@ class IntegratedResumeTests(unittest.TestCase):
             self.assertEqual(saved.pending, {"brains": 1, "footprints": 1, "shots": 1})
             self.assertEqual(len(saved.carried_dice), 1)
 
-            resumed = play(StringIO("s\ns\n"), StringIO(), path, chooser, lambda die: "C")
+            resumed_output = StringIO()
+            resumed = play(StringIO("s\ns\n"), resumed_output, path, chooser, lambda die: "C")
             self.assertEqual(resumed.scores, before_score)
             self.assertEqual(resumed.current_player, "Bia")
-            # Retomada relança o passo preservado e mantém o resto do turno acumulado.
-            self.assertEqual(resumed.pending, {"brains": 4, "footprints": 0, "shots": 1})
-            # Sair salva os cérebros pendentes, mas só parar os credita ao placar.
+            # Retomar apresenta a decisão daquele lançamento antes de lançar de novo.
+            self.assertTrue(resumed.decision_pending)
+            self.assertEqual(resumed.pending, {"brains": 1, "footprints": 1, "shots": 1})
             self.assertEqual(resumed.scores, before_score)
             resumed_output = StringIO()
             play(StringIO("s\np\ns\n"), resumed_output, path, chooser, lambda die: "C")
-            uninterrupted_faces = iter(["C", "C", "T", "C", "P", "T"] + ["C"] * 6)
+            uninterrupted_faces = iter(["C", "C", "T", "C", "P", "T"] + ["C"] * 3)
             uninterrupted_output = StringIO()
-            play(StringIO("3\nAna\nBia\nCaio\np\nc\np\ns\n"), uninterrupted_output,
+            play(StringIO("3\nAna\nBia\nCaio\np\np\ns\n"), uninterrupted_output,
                  Path(directory) / "uninterrupted.json", chooser,
                  lambda die: next(uninterrupted_faces, "C"))
             observed_order = (self.turn_starts(first_output.getvalue())
                               + self.turn_starts(resumed_output.getvalue()))
             uninterrupted_order = self.turn_starts(uninterrupted_output.getvalue())
             self.assertEqual(observed_order, uninterrupted_order)
-            self.assertEqual(observed_order, ["Ana", "Bia", "Bia", "Caio"])
+            self.assertEqual(observed_order, ["Ana", "Bia", "Caio"])
 
     def test_eliminated_player_is_persisted_and_skipped_after_restart(self) -> None:
         from io import StringIO
@@ -208,15 +217,17 @@ class IntegratedResumeTests(unittest.TestCase):
 
         with TemporaryDirectory() as directory:
             path = Path(directory) / "save.json"
-            scripted_faces = iter(["T", "T", "T", "C", "C", "C"])
-            play(StringIO("3\nAna\nBia\nCaio\ns\n"), StringIO(), path,
+            scripted_faces = iter(["T", "T", "T"] + ["C"] * 9)
+            play(StringIO("3\nAna\nBia\nCaio\ns\ns\n"), StringIO(), path,
                  lambda cup: cup[0], lambda die: next(scripted_faces))
-            resumed = play(StringIO("s\ns\n"), StringIO(), path,
+            resumed_output = StringIO()
+            resumed = play(StringIO("s\np\ns\n"), resumed_output, path,
                            lambda cup: cup[0], lambda die: next(scripted_faces))
             self.assertIn("Ana", resumed.eliminated)
-            self.assertEqual(resumed.current_player, "Bia")
+            self.assertEqual(resumed.current_player, "Caio")
             self.assertIn("Ana", resumed.eliminated)
             self.assertNotEqual(resumed.current_player, "Ana")
+            self.assertNotIn("Vez de Ana", resumed_output.getvalue())
 
     def test_next_player_rolls_before_choice_after_elimination(self) -> None:
         from io import StringIO
