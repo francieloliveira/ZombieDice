@@ -187,18 +187,20 @@ class IntegratedResumeTests(unittest.TestCase):
             self.assertEqual(resumed.current_player, "Bia")
             # Retomada relança o passo preservado e mantém o resto do turno acumulado.
             self.assertEqual(resumed.pending, {"brains": 4, "footprints": 0, "shots": 1})
-            self.assertEqual(resumed.scores, {"Ana": 2, "Bia": 4, "Caio": 0})
+            # Sair salva os cérebros pendentes, mas só parar os credita ao placar.
+            self.assertEqual(resumed.scores, before_score)
             resumed_output = StringIO()
             play(StringIO("s\np\ns\n"), resumed_output, path, chooser, lambda die: "C")
-            uninterrupted_faces = iter(["C", "C", "T", "C", "P", "T"])
+            uninterrupted_faces = iter(["C", "C", "T", "C", "P", "T"] + ["C"] * 6)
             uninterrupted_output = StringIO()
-            play(StringIO("3\nAna\nBia\nCaio\np\np\ns\n"), uninterrupted_output,
+            play(StringIO("3\nAna\nBia\nCaio\np\nc\np\ns\n"), uninterrupted_output,
                  Path(directory) / "uninterrupted.json", chooser,
                  lambda die: next(uninterrupted_faces, "C"))
-            continued_order = self.turn_starts(uninterrupted_output.getvalue())[2:]
-            resumed_order = self.turn_starts(resumed_output.getvalue())[1:]
-            self.assertEqual(resumed_order, continued_order)
-            self.assertEqual(resumed_order, ["Caio"])
+            observed_order = (self.turn_starts(first_output.getvalue())
+                              + self.turn_starts(resumed_output.getvalue()))
+            uninterrupted_order = self.turn_starts(uninterrupted_output.getvalue())
+            self.assertEqual(observed_order, uninterrupted_order)
+            self.assertEqual(observed_order, ["Ana", "Bia", "Bia", "Caio"])
 
     def test_eliminated_player_is_persisted_and_skipped_after_restart(self) -> None:
         from io import StringIO
