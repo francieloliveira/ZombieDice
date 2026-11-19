@@ -50,11 +50,14 @@ def reabastecer_copo(copo):
     return novo_copo()
 
 
-def sortear_dados(copo, quantidade=DADOS_POR_LANCAMENTO):
+def sortear_dados(copo, quantidade=DADOS_POR_LANCAMENTO, random=random):
     """Sorteia `quantidade` dados do copo e os remove dele (R4).
 
     Retorna uma tupla (dados_sorteados, copo_atualizado). Quando o copo
     ficar com menos dados do que o pedido, o tubo é reabastecido primeiro.
+
+    `random` é a fonte de aleatoriedade. Injete um random.Random(seed) para
+    obter lançamentos determinísticos sem monkeypatch global.
     """
     copo = reabastecer_copo(copo)
     sorteados = []
@@ -64,8 +67,12 @@ def sortear_dados(copo, quantidade=DADOS_POR_LANCAMENTO):
     return sorteados, copo
 
 
-def sortear_face(dado):
-    """Sorteia uma face de um dado. Retorna 'C', 'P' ou 'T'."""
+def sortear_face(dado, random=random):
+    """Sorteia uma face de um dado. Retorna 'C', 'P' ou 'T'.
+
+    `random` é a fonte de aleatoriedade. Injete um random.Random(seed) para
+    obter lançamentos determinísticos sem monkeypatch global.
+    """
     return random.choice(dado)
 
 
@@ -94,7 +101,7 @@ def cor_do_dado(dado):
 class Partida(object):
     """Estado e regras de uma partida de Zombie Dice."""
 
-    def __init__(self, nomes_jogadores):
+    def __init__(self, nomes_jogadores, random=random):
         nomes = list(nomes_jogadores)
         if len(nomes) < 2:
             raise ValueError("são necessários pelo menos 2 jogadores")
@@ -113,6 +120,8 @@ class Partida(object):
         self.jogados = set()
         self.jogador_atual = None
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        self.dados_passo = []   # dados que caíram em passo, aguardando relançamento (R5)
+        self.random = random    # fonte de aleatoriedade injetável
 
     def proximo_jogador(self):
         """Escolhe aleatoriamente o próximo jogador que ainda pode jogar.
@@ -126,7 +135,7 @@ class Partida(object):
                        if n not in self.eliminados and n not in self.jogados]
         if not disponiveis:
             return None
-        return random.choice(disponiveis)
+        return self.random.choice(disponiveis)
 
     def iniciar_turno(self, nome):
         """Inicia o turno de `nome` e zera os acumuladores do turno."""
@@ -138,19 +147,34 @@ class Partida(object):
             raise RuntimeError("jogador eliminado não pode jogar: %r" % (nome,))
         self.jogador_atual = nome
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        self.dados_passo = []
         return nome
 
     def lancar(self):
         """Executa um lançamento de 3 dados para o jogador da vez.
 
+        Os dados que caíram em passo no lançamento anterior são relançados
+        (R5), completando a mão com dados novos do tubo até 3 (R4).
+
         Retorna um dicionário com o resultado (não imprime nada).
         """
         if self.jogador_atual is None:
             raise RuntimeError("não há turno iniciado")
-        dados, self.copo = sortear_dados(self.copo)
-        faces = [sortear_face(dado) for dado in dados]
+        # Relança os dados que caíram em passo no lançamento anterior.
+        dados = list(self.dados_passo)
+        self.dados_passo = []
+        # Completa a mão com dados novos do tubo até 3 (R4/R5).
+        faltam = DADOS_POR_LANCAMENTO - len(dados)
+        if faltam > 0:
+            novos, self.copo = sortear_dados(self.copo, faltam, random=self.random)
+            dados.extend(novos)
+        faces = [sortear_face(dado, random=self.random) for dado in dados]
         for face in faces:
             self.turno[classificar_face(face)] += 1
+        # Guarda os dados que caíram em passo para relançar na próxima continuação.
+        for dado, face in zip(dados, faces):
+            if face == PASSO:
+                self.dados_passo.append(dado)
         return {
             'jogador': self.jogador_atual,
             'dados': dados,
@@ -169,10 +193,11 @@ class Partida(object):
         if nome == self.jogador_atual:
             cerebro += self.turno['cerebro']
             tiro += self.turno['tiro']
-        if cerebro >= PONTUACAO_VITORIA:
-            return STATUS_VITORIA
+        # R6 tem precedência: 3 tiros eliminam mesmo que haja cérebros para vencer.
         if tiro >= TIROS_PARA_ELIMINAR:
             return STATUS_ELIMINADO
+        if cerebro >= PONTUACAO_VITORIA:
+            return STATUS_VITORIA
         return STATUS_JOGANDO
 
     def parar_turno(self, nome=None):
@@ -186,6 +211,7 @@ class Partida(object):
         self.placar[nome]['cerebro'] += self.turno['cerebro']
         self.placar[nome]['tiro'] = 0
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        self.dados_passo = []
         self.jogador_atual = None
         self.jogados.add(nome)
         return dict(self.placar[nome])
@@ -197,5 +223,6 @@ class Partida(object):
         if nome not in self.eliminados:
             self.eliminados.append(nome)
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        self.dados_passo = []
         self.jogador_atual = None
         self.jogados.add(nome)
