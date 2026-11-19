@@ -26,7 +26,7 @@ Cada etapa cita o arquivo e a função/bloco onde ocorre. Referências de linha 
 | Exibir copo | Lista índices/dados do copo e aguarda. | `main.py`, `showCopo()` L37–47; chamada em L192. |
 | Entrar no laço de partida | Laço `while not WIN or not list(players.keys()):`; se não houver jogadores restantes imprime término, mostra placar e encerra. | `main.py`, bloco principal, L194–198. |
 
-**Diferenças observadas:** o texto de validação diz “maior que 2”, mas a condição aceita `2` (`< 2`). A “partida” é um único processo em memória, sem persistência.
+**Diferenças observadas:** o texto de validação diz “maior que 2”, mas a condição aceita `2` (`< 2`). A “partida” deste fluxo é um único processo em memória, sem persistência; a retomada está documentada separadamente para `main_teste.py`.
 
 ### 2. Início de turno (seleção de jogador)
 
@@ -71,7 +71,7 @@ Cada etapa cita o arquivo e a função/bloco onde ocorre. Referências de linha 
 | Parar (`n`) | Limpa o copo (`copo.clear()`) e encerra o laço do turno (`break`). | `main.py`, bloco principal, L275–277. |
 | Continuar (`s` ou outro valor ≠ `n`) | Não entra no `if status == "n"`; o `while True` do turno repete (nova rolagem). | `main.py`, bloco principal, L210–277. |
 
-**Diferenças observadas (R7/R8):** a pergunta ocorre após cada ciclo de rolagem/avaliação (R8 atendido no formato). Ao parar, os cérebros do turno já foram gravados no `placar` na chamada de `showPlacar()` (L262, L56), mas **não há** zeramento explícito de “tiros para próxima rodada” como regra separada além do reset de contadores ao iniciar um novo turno de outro jogador (L206–208); como o jogador já foi removido de `players` (L204), ele não retorna para novo turno em `main.py`. A limpeza do copo ao parar descarta o estado do tubo.
+**Diferenças observadas (R7/R8):** a pergunta ocorre após cada ciclo de rolagem/avaliação (R8 atendido no formato). Ao parar, os cérebros do turno são gravados no `placar` pela chamada de `showPlacar()` (L262, L56), mas não são somados a um total persistente do jogador; os tiros só deixam de valer quando os contadores globais são zerados no início do próximo turno (L206–208). Como o jogador já foi removido de `players` (L204), ele não retorna para novo turno em `main.py`. A limpeza do copo ao parar descarta o estado do tubo.
 
 ### 6. Fim de partida
 
@@ -106,7 +106,7 @@ Colunas: **Estado atual**, **Evento**, **Estado seguinte**, **Condição**. A co
 | Faces resolvidas | Resultado = cérebro | Turno em andamento (cérebros do turno +1) | Face sorteada `C` | Implementa (contagem no turno; registro no placar ao exibir) | `main.py`, bloco principal L227–229, L240–242, L252–254; `showPlacar()` L50–64 |
 | Faces resolvidas | Resultado = tiro | Turno em andamento (tiros do turno +1) ou derrota se atingir limite | Face sorteada `T`; se total de tiros no placar/turno `>= 3` após avaliação → derrota | Implementa (eliminação por 3 tiros no turno) | `main.py`, bloco principal L231–232, L244–245, L256–257; `showStatusPlayer()` L88–94, L265–267 |
 | Faces resolvidas | Resultado = passos (R5) | Turno em andamento (passos do turno +1); dados de passos deveriam ser relançados ao continuar | Face sorteada `P` | Implementa diferente do README (marca passo, mas não preserva o dado para relançar; próxima rolagem compra 3 dados novos) | `main.py`, bloco principal L229–230, L242–243, L254–255, L212–219 |
-| Turno em andamento (após avaliação, sem derrota/vitória) | Parar (R7, R8) | Fim do turno do jogador; partida aguarda próximo turno | Jogador responde `n` à pergunta de continuar | Implementa diferente do README (cérebros do turno refletidos no `placar` via `showPlacar`, mas tiros não são explicitamente zerados como regra de transição e o jogador não retorna em nova rodada neste fluxo; copo é limpo) | `main.py`, bloco principal L262–277; `showPlacar()` L50–64 |
+| Turno em andamento (após avaliação, sem derrota/vitória) | Parar (R7, R8) | Fim do turno do jogador; partida aguarda próximo turno | Jogador responde `n` à pergunta de continuar | Implementa diferente do README (cérebros são exibidos no placar do turno, mas não somados a um total persistente; tiros só são zerados quando os contadores são reiniciados no próximo turno, e o jogador não retorna em nova rodada neste fluxo; copo é limpo) | `main.py`, bloco principal L262–277; `showPlacar()` L50–64 |
 | Turno em andamento (após avaliação, sem derrota/vitória) | Continuar (R8) | Nova rolagem no mesmo turno | Jogador não responde `n` (qualquer outra entrada mantém o laço) | Implementa diferente do README (continua rolando, mas sem mecânica correta de passos R5) | `main.py`, bloco principal L210–277 |
 | Turno em andamento | Acumular 3 tiros (R6) | Jogador eliminado do jogo; turno encerrado | `placar[plr_name]['tiro'] >= 3` na avaliação | Implementa (marca derrota e encerra turno; jogador já fora de `players`) | `main.py`, `showStatusPlayer()` L88–94; bloco principal L204, L265–267 |
 | Turno em andamento | Atingir 13 cérebros | Partida encerrada após o turno atual | `placar[plr_name]['cerebro'] >= 13`; `WIN` passa a verdadeiro e `players` ainda contém ao menos um jogador | Implementa diferente do README (encerra a partida imediatamente; não modela desempate nem última rodada) | `main.py`, `showStatusPlayer()` L94–98; bloco principal L194–198, L268–270 |
