@@ -111,6 +111,18 @@ class TestPartida(unittest.TestCase):
         self.assertEqual(resultado['turno']['tiro'], 3)
         self.assertEqual(partida.estado_do_jogador('Ana'), jogo.STATUS_ELIMINADO)
 
+    def test_eliminacao_preserva_acumulado_do_turno_no_placar(self):
+        partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(
+            faces=[jogo.CEREBRO, jogo.PASSO, jogo.TIRO,
+                   jogo.TIRO, jogo.TIRO, jogo.PASSO],
+            indices=[0, 1, 2, 3]))
+        partida.iniciar_turno('Ana')
+        partida.lancar()
+        partida.lancar()
+        partida.eliminar_jogador('Ana')
+        self.assertEqual(partida.placar['Ana'],
+                         {'cerebro': 1, 'passo': 2, 'tiro': 3})
+
     def test_tres_tiros_prevalecem_sobre_vitoria_no_mesmo_lancamento(self):
         """13 cérebros e 3 tiros no mesmo turno: eliminação prevalece (R6)."""
         partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(
@@ -134,6 +146,18 @@ class TestPartida(unittest.TestCase):
         while partida.estado_do_jogador() != jogo.STATUS_VITORIA:
             partida.lancar()
         self.assertEqual(partida.estado_do_jogador('Ana'), jogo.STATUS_VITORIA)
+
+    def test_vitoria_preserva_tiros_no_placar_final(self):
+        partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(
+            faces=[jogo.CEREBRO, jogo.CEREBRO, jogo.TIRO],
+            indices=[0, 1, 2]))
+        partida.iniciar_turno('Ana')
+        partida.placar['Ana']['cerebro'] = 12
+        partida.lancar()
+        placar = partida.finalizar_vitoria('Ana')
+        self.assertEqual(placar['cerebro'], 14)
+        self.assertEqual(placar['tiro'], 1)
+        self.assertEqual(partida.vencedor, 'Ana')
 
     def test_parar_turno_contabiliza_cerebros_e_zera_tiros(self):
         partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(

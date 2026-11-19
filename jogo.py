@@ -217,12 +217,31 @@ class Partida(object):
         self.jogados.add(nome)
         return dict(self.placar[nome])
 
+    def finalizar_vitoria(self, nome=None):
+        """Contabiliza cérebros sem apagar os tiros visíveis no placar final."""
+        if nome is None:
+            nome = self.jogador_atual
+        self.placar[nome]['cerebro'] += self.turno['cerebro']
+        self.placar[nome]['passo'] += self.turno['passo']
+        self.placar[nome]['tiro'] += self.turno['tiro']
+        self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        self.dados_passo = []
+        self.jogador_atual = None
+        self.jogados.add(nome)
+        self.vencedor = nome
+        return dict(self.placar[nome])
+
     def eliminar_jogador(self, nome=None):
         """Marca `nome` como eliminado (R6/§4): não joga mais nesta partida."""
         if nome is None:
             nome = self.jogador_atual
         if nome not in self.eliminados:
             self.eliminados.append(nome)
+        # O terminal anterior mostrava o acumulado do turno antes de remover
+        # o jogador; retenha esses valores no placar para preservar o histórico.
+        self.placar[nome]['cerebro'] += self.turno['cerebro']
+        self.placar[nome]['passo'] += self.turno['passo']
+        self.placar[nome]['tiro'] += self.turno['tiro']
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
         self.dados_passo = []
         self.copo = novo_copo()   # os dados voltam ao tubo para o próximo jogador

@@ -114,9 +114,8 @@ def main():
                 partida.eliminar_jogador(nome)
                 break
             if estado == jogo.STATUS_VITORIA:
-                # Contabiliza os cérebros do turno no placar antes de encerrar.
-                partida.parar_turno(nome)
-                partida.vencedor = nome
+                # Contabiliza o turno e mantém os tiros no placar da vitória.
+                partida.finalizar_vitoria(nome)
                 print("Jogador: \"%s\" Venceu!" % nome)
                 mostrar_placar(partida)
                 break
