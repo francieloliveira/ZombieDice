@@ -134,10 +134,13 @@ def play(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.stdout,
             players.append(input_stream.readline().strip())
         game = Game(players)
     while game.current_player is not None and max(game.scores.values(), default=0) < 13:
-        output_stream.write(f"Vez de {game.current_player}; placar {game.scores}; turno {game.pending}\n")
+        rolling_player = game.current_player
+        output_stream.write(f"Vez de {rolling_player}; placar {game.scores}; turno {game.pending}\n")
         result = game.toss(chooser, face_roller)
         output_stream.write(f"Lançamento: {result}; placar {game.scores}; turno {game.pending}\n")
-        if game.current_player is None or game.current_player in game.eliminated:
+        # A eliminação já avança o índice. O próximo jogador deve lançar antes
+        # de receber a escolha parar/continuar para o seu próprio turno.
+        if rolling_player in game.eliminated:
             continue
         output_stream.write("Continuar, parar ou sair? (c/p/s): ")
         choice = input_stream.readline().strip().lower()
@@ -155,6 +158,11 @@ def play(input_stream: TextIO = sys.stdin, output_stream: TextIO = sys.stdout,
 
 
 class IntegratedResumeTests(unittest.TestCase):
+    @staticmethod
+    def turn_starts(output: str) -> list[str]:
+        return [line.split(";", 1)[0].removeprefix("Vez de ")
+                for line in output.splitlines() if line.startswith("Vez de ")]
+
     def test_interrupt_restart_preserves_score_turn_order_and_partial_roll(self) -> None:
         from io import StringIO
         from tempfile import TemporaryDirectory
@@ -165,10 +173,10 @@ class IntegratedResumeTests(unittest.TestCase):
             scripted_faces = iter(["C", "C", "T", "C", "P", "T"])
             chooser = lambda cup: cup[0]
             face = lambda die: next(scripted_faces)
-            play(StringIO("3\nAna\nBia\nCaio\np\ns\n"), StringIO(), path, chooser, face)
+            first_output = StringIO()
+            play(StringIO("3\nAna\nBia\nCaio\np\ns\n"), first_output, path, chooser, face)
             saved = load_game(path)
             before_score = dict(saved.scores)
-            before_order = [saved.players[(saved.turn_index + i) % len(saved.players)] for i in range(len(saved.players))]
             self.assertEqual(before_score, {"Ana": 2, "Bia": 0, "Caio": 0})
             self.assertEqual(saved.current_player, "Bia")
             self.assertEqual(saved.pending, {"brains": 1, "footprints": 1, "shots": 1})
@@ -179,10 +187,18 @@ class IntegratedResumeTests(unittest.TestCase):
             self.assertEqual(resumed.current_player, "Bia")
             # Retomada relança o passo preservado e mantém o resto do turno acumulado.
             self.assertEqual(resumed.pending, {"brains": 4, "footprints": 0, "shots": 1})
-            resumed.stop_turn()
-            self.assertEqual(resumed.current_player, "Caio")
             self.assertEqual(resumed.scores, {"Ana": 2, "Bia": 4, "Caio": 0})
-            self.assertEqual(before_order, ["Bia", "Caio", "Ana"])
+            resumed_output = StringIO()
+            play(StringIO("s\np\ns\n"), resumed_output, path, chooser, lambda die: "C")
+            uninterrupted_faces = iter(["C", "C", "T", "C", "P", "T"])
+            uninterrupted_output = StringIO()
+            play(StringIO("3\nAna\nBia\nCaio\np\np\ns\n"), uninterrupted_output,
+                 Path(directory) / "uninterrupted.json", chooser,
+                 lambda die: next(uninterrupted_faces, "C"))
+            continued_order = self.turn_starts(uninterrupted_output.getvalue())[2:]
+            resumed_order = self.turn_starts(resumed_output.getvalue())[1:]
+            self.assertEqual(resumed_order, continued_order)
+            self.assertEqual(resumed_order, ["Caio"])
 
     def test_eliminated_player_is_persisted_and_skipped_after_restart(self) -> None:
         from io import StringIO
@@ -199,6 +215,18 @@ class IntegratedResumeTests(unittest.TestCase):
             self.assertEqual(resumed.current_player, "Bia")
             self.assertIn("Ana", resumed.eliminated)
             self.assertNotEqual(resumed.current_player, "Ana")
+
+    def test_next_player_rolls_before_choice_after_elimination(self) -> None:
+        from io import StringIO
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            output = StringIO()
+            faces = iter(["T", "T", "T"] + ["C"] * 9)
+            play(StringIO("3\nAna\nBia\nCaio\np\np\ns\n"), output,
+                 Path(directory) / "save.json", lambda cup: cup[0],
+                 lambda die: next(faces))
+            self.assertEqual(self.turn_starts(output.getvalue()), ["Ana", "Bia", "Caio", "Bia"])
 
 
 if __name__ == "__main__":
