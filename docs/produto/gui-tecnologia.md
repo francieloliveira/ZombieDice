@@ -40,10 +40,6 @@ Comparar Tkinter, pygame e web para um protótipo mínimo que mostre dados rolad
 | pygame | Média. | Exige `pip install` e, em alguns SOs, bibliotecas gráficas do sistema. |
 | web | Média. | Exige subir servidor e abrir navegador; mais passos para o avaliador. |
 
-## Escolha
-
-**Tkinter.** Motivo em até 5 linhas: zero dependências externas, um único comando para rodar, widgets prontos para botões e `Canvas` suficiente para dados coloridos com face, o que atende ao protótipo mínimo de baixo custo sem alterar R1–R9; pygame e web exigem instalação ou duas camadas (servidor + front-end) para o mesmo resultado.
-
 ## Tela do turno
 
 A tela do turno (protótipo FRA-692) exibe, usando a interface de jogo separada (FRA-690):
@@ -71,3 +67,7 @@ Esta decisão não altera R1–R9 do norte (`docs/produto/caminho.md` §2). Apen
 - Implementar o protótipo (FRA-692).
 - Alterar a lógica do jogo (FRA-690).
 - Criar mecânica nova além de R1–R9.
+
+## Escolha
+
+**Tkinter.** Motivo em até 5 linhas: zero dependências externas, um único comando para rodar, widgets prontos para botões e `Canvas` suficiente para dados coloridos com face, o que atende ao protótipo mínimo de baixo custo sem alterar R1–R9; pygame e web exigem instalação ou duas camadas (servidor + front-end) para o mesmo resultado.
