@@ -7,7 +7,7 @@ Mapa do fluxo ponta a ponta e das transições de estado observadas no código a
 | Arquivo | Papel no repositório | Observação |
 | --- | --- | --- |
 | `main.py` | Fluxo principal executável (script de topo). | Base principal do mapeamento. |
-| `main_teste.py` | Variante com tentativa de lógica de interrupção/retorno no mesmo processo. | Citado nas etapas/transições de interrupção e retomada. Commit de origem: `4326dd7` (“add main_teste.py para testar lógica do jogador que interrompe a partida e volta ao final para continuar jogando”). |
+| `main_teste.py` | Implementação integrada do fluxo de jogo com salvamento e retomada entre execuções (FRA-689), além de testes embutidos. | Citado nas etapas/transições de interrupção e retomada; o fluxo legado de `main.py` continua separado. |
 | `mainAntigo.py` | Versão anterior preservada. | Citado como contraste histórico quando relevante (não é o fluxo vigente). |
 | `README.md` | Dinâmica do jogo descrita para avaliação. | Fonte de fidelidade (norte §3). |
 
@@ -35,7 +35,7 @@ Cada etapa cita o arquivo e a função/bloco onde ocorre. Referências de linha 
 | Sortear jogador atual | Escolhe aleatoriamente um nome em `players.keys()`; guarda `lastPlayed`; remove o jogador de `players` (`pop`). | `main.py`, bloco principal, L200–204. |
 | Zerar contadores do turno | Define `cerebro = 0`, `passo = 0`, `tiro = 0` (globais do turno/jogada corrente). | `main.py`, bloco principal, L206–208. |
 
-**Diferenças observadas:** como o jogador é removido de `players` e não é reinserido, cada jogador joga um turno na sequência sorteada até esgotar `players` (não há rodada completa recorrente com acúmulo entre turnos no mesmo ciclo de `players`). Em `main_teste.py`, a seleção também faz `players.pop(playerName)` (L214) e registra `lastPlayed` (L213), mas há estruturas adicionais `nojogo`/`lastPlayed` (L11–12, L198–201, L287).
+**Diferenças observadas:** em `main.py`, o jogador é removido de `players` e não é reinserido, então cada cadastrado joga um turno até esgotar a lista. Já `main_teste.py` mantém uma lista fixa de participantes, avança pelo índice de turno e ignora os eliminados (`Game._next_active()` L40–46, `Game._advance()` L85–86).
 
 ### 3. Rolagem (dentro do turno)
 
@@ -61,7 +61,7 @@ Cada etapa cita o arquivo e a função/bloco onde ocorre. Referências de linha 
 | Continuar jogando | Caso contrário `status = "jogando"`. | `main.py`, `showStatusPlayer(plr_name)` L99–101. |
 | Reação do laço do turno | `loose` → encerra turno (`break`); `win` → `WIN = True` e encerra turno; senão pergunta se deseja continuar. | `main.py`, bloco principal, L265–270. |
 
-**Variante `main_teste.py`:** em derrota (`tiro >= 3`) também remove o jogador de `nojogo` (`nojogo.pop(playerName)`) em `showStatusPlayer` (L90–97), além de limpar estruturas de dados.
+**Variante `main_teste.py`:** `Game.resolve_roll()` elimina o jogador quando os tiros pendentes chegam a 3, zera os contadores pendentes e avança para o próximo jogador ativo (L48–61).
 
 ### 5. Fim de turno por decisão do jogador (parar)
 
@@ -78,19 +78,20 @@ Cada etapa cita o arquivo e a função/bloco onde ocorre. Referências de linha 
 | Etapa | O que acontece no código | Onde ocorre (arquivo e função/bloco) |
 | --- | --- | --- |
 | Sem jogadores restantes | No topo do laço externo, se `not list(players.keys())`: imprime término, chama `showPlacar()` e `break`. | `main.py`, bloco principal, L195–198. |
-| Vitória detectada | Ao vencer, `showStatusPlayer` imprime vitória e mostra placar (L94–97) e o bloco principal define `WIN = True` e sai do turno (L268–270). O laço externo é `while not WIN or not list(players.keys()):`, portanto a condição pode permanecer verdadeira se ainda houver jogadores em `players`. | `main.py`, `showStatusPlayer()` L94–98; bloco principal L194, L268–270. |
+| Vitória detectada | Ao vencer, `showStatusPlayer` imprime vitória e mostra placar (L94–97) e o bloco principal define `WIN = True` e sai do turno (L268–270). Na próxima avaliação, o laço externo `while not WIN or not list(players.keys())` termina imediatamente: com `WIN` verdadeiro e jogadores restantes, ambos os termos são falsos. Se `players` estiver vazio, o segundo termo é verdadeiro, então a próxima iteração entra no laço, exibe o término/placar e sai pelo `break`. | `main.py`, `showStatusPlayer()` L94–98; bloco principal L194–198, L268–270. |
 
-**Diferenças observadas:** não há encerramento imediato garantido da partida para todos ao atingir 13 cérebros (condição do laço externo usa `or`). Não há desempate nem “última rodada” modelados.
+**Diferenças observadas:** ao atingir 13 cérebros a partida encerra imediatamente se ainda houver jogadores em `players`; quando a lista já está vazia, o laço externo ainda entra uma vez para exibir o término e o placar antes de sair. Não há desempate nem “última rodada” modelados.
 
 ### 7. Interrupção e retomada
 
 | Etapa | O que acontece no código | Onde ocorre (arquivo e função/bloco) |
 | --- | --- | --- |
-| Interrupção da partida (sair do programa e voltar depois) | **Não implementado.** Não há gravação/leitura de estado em disco, banco ou outro mecanismo de persistência entre execuções. | Ausente em `main.py`, `main_teste.py`, `mainAntigo.py`. |
-| “Interromper/pausar” um jogador e continuar depois na mesma execução (tentativa) | Inicializa `nojogo = players` e entra em laço aninhado; ao parar (`n`), limpa copo e registra `nojogo[playerName] = {cerebro, passo, tiro}`; ao perder por tiros, remove de `nojogo` em `showStatusPlayer`. O jogador é retirado de `players` ao ser sorteado (`players.pop`). | `main_teste.py`, bloco principal, L198–201, L209–215, L283–288; `showStatusPlayer()` L90–97. |
-| Retomada após interrupção entre execuções (R9) | **Não implementado.** Não há restauração de `placar`, `nojogo`, copo, ordem de jogadores ou turno salvo. | Ausente em `main.py`, `main_teste.py`, `mainAntigo.py`. |
+| Interromper e salvar (R9) | No fluxo integrado, a opção `sair` serializa o snapshot da partida em JSON e retorna; o snapshot inclui placar, eliminados, jogador/índice atual, contadores pendentes, dados carregados, copo e decisão pendente. | `main_teste.py`, `play()` L140–146; `Game.snapshot()` L88–92; `save_game()` L109–110. |
+| Retomar entre execuções (R9) | Se o arquivo salvo existe e o usuário escolhe retomar, lê JSON e restaura o estado da partida antes de voltar ao laço de jogo. | `main_teste.py`, `play()` L122–126; `load_game()` L113–114; `Game.resume()` L94–106. |
+| Continuar após retomar lançamento pendente | A decisão de parar/continuar/sair é apresentada antes de um novo lançamento; parar encerra o turno, continuar segue ao próximo lançamento e sair salva novamente. | `main_teste.py`, `play()` L140–151; `Game.stop_turn()` L77–83. |
+| Fluxo legado | `main.py` e `mainAntigo.py` não salvam nem restauram estado entre execuções. | Ausente nesses arquivos; o fluxo persistente está em `main_teste.py`. |
 
-**Diferenças observadas (R9):** `main_teste.py` sugere intenção de “voltar ao final para continuar jogando” na mesma sessão, mas compartilha referências (`nojogo = players` em L199) e o fluxo de reinício de rodada/retomada não está modelado de forma completa e persistente; ainda assim não atende “voltar depois para continuar jogando” como retomada de partida interrompida.
+**Diferenças observadas (R9):** o fluxo integrado de `main_teste.py` implementa persistência da partida. O fluxo legado em `main.py` permanece sem interrupção/retomada persistente; este mapa registra ambos sem afirmar que os dois executáveis têm o mesmo comportamento.
 
 ## Tabela de transições de estado
 
@@ -108,15 +109,14 @@ Colunas: **Estado atual**, **Evento**, **Estado seguinte**, **Condição**. A co
 | Turno em andamento (após avaliação, sem derrota/vitória) | Parar (R7, R8) | Fim do turno do jogador; partida aguarda próximo turno | Jogador responde `n` à pergunta de continuar | Implementa diferente do README (cérebros do turno refletidos no `placar` via `showPlacar`, mas tiros não são explicitamente zerados como regra de transição e o jogador não retorna em nova rodada neste fluxo; copo é limpo) | `main.py`, bloco principal L262–277; `showPlacar()` L50–64 |
 | Turno em andamento (após avaliação, sem derrota/vitória) | Continuar (R8) | Nova rolagem no mesmo turno | Jogador não responde `n` (qualquer outra entrada mantém o laço) | Implementa diferente do README (continua rolando, mas sem mecânica correta de passos R5) | `main.py`, bloco principal L210–277 |
 | Turno em andamento | Acumular 3 tiros (R6) | Jogador eliminado do jogo; turno encerrado | `placar[plr_name]['tiro'] >= 3` na avaliação | Implementa (marca derrota e encerra turno; jogador já fora de `players`) | `main.py`, `showStatusPlayer()` L88–94; bloco principal L204, L265–267 |
-| Turno em andamento | Atingir 13 cérebros | Vitória do jogador (estado de vitória sinalizado) | `placar[plr_name]['cerebro'] >= 13` na avaliação | Implementa diferente do README (sinaliza vitória, mas o laço externo pode não encerrar imediatamente se ainda houver jogadores) | `main.py`, `showStatusPlayer()` L94–98; bloco principal L194, L268–270 |
+| Turno em andamento | Atingir 13 cérebros | Partida encerrada após o turno atual | `placar[plr_name]['cerebro'] >= 13`; `WIN` passa a verdadeiro e `players` ainda contém ao menos um jogador | Implementa diferente do README (encerra a partida imediatamente; não modela desempate nem última rodada) | `main.py`, `showStatusPlayer()` L94–98; bloco principal L194–198, L268–270 |
 | Partida em andamento | Fim de jogadores a sortear | Partida encerrada (término exibido) | `players` vazio ao iniciar iteração do laço externo | Implementa diferente do README (encerramento por esgotamento da lista, não por condição completa de vitória/rodada) | `main.py`, bloco principal L195–198 |
-| Partida em andamento | Interromper partida e sair (R9) | Partida persistida para retomada posterior | Jogador deseja sair e voltar depois em outra execução | Não implementa (sem persistência de estado) | Ausente em `main.py`, `main_teste.py`, `mainAntigo.py` (verificação por inspeção: nenhum uso de arquivo/serialização de estado de partida) |
-| Partida interrompida (execução anterior) | Retomar partida (R9) | Partida em andamento no estado salvo | Estado previamente persistido disponível | Não implementa (sem leitura/restauração de estado) | Ausente em `main.py`, `main_teste.py`, `mainAntigo.py` |
-| Turno em andamento (mesma execução, variante de teste) | Parar e manter jogador para novo ciclo interno | Jogador registrado em `nojogo` com contadores do momento | Resposta `n`; atribuição em `nojogo[playerName]` | Implementa diferente do README (tentativa de retorno na mesma sessão em `main_teste.py`; não é retomada de partida interrompida entre execuções e o controle de fluxo é inconsistente) | `main_teste.py`, bloco principal L283–288, L198–201, L209–215; `showStatusPlayer()` L90–97 |
-| Jogador em `nojogo` (variante de teste) | Retomar no fluxo interno | Jogador elegível conforme estruturas `players`/`nojogo` | Dependente do estado mutável compartilhado (`nojogo = players`) e dos laços aninhados | Implementa diferente do README (mecânica parcial e não persistente; não satisfaz R9 como especificado) | `main_teste.py`, bloco principal L198–288 |
+| Partida em andamento | Interromper partida e sair (R9) | Partida persistida para retomada posterior | Jogador escolhe `sair` quando há decisão pendente após lançamento | Implementa em `main_teste.py`; não implementa no fluxo legado de `main.py` | `main_teste.py`, `play()` L140–146; `save_game()` L109–110; ausente em `main.py` |
+| Partida interrompida (execução anterior) | Retomar partida (R9) | Partida em andamento no estado salvo | Arquivo JSON encontrado e usuário escolhe retomar | Implementa em `main_teste.py`; não implementa no fluxo legado de `main.py` | `main_teste.py`, `play()` L122–126; `load_game()` L113–114; `Game.resume()` L94–106; ausente em `main.py` |
+| Decisão de turno pendente | Continuar após retomada | Mesmo turno continua com estado pendente restaurado | Jogador escolhe `c` | Implementa em `main_teste.py`; mantém cérebros/tiros pendentes e dados de passos carregados para próxima rolagem | `main_teste.py`, `play()` L140–151; `Game.toss()` L63–75; `Game.snapshot()` L88–92 |
 
 ## Notas de rastreabilidade
 
 - **Regra de fidelidade:** norte §3 estabelece que a fidelidade às regras do `README.md` vence; este mapa registra o comportamento real observado no código para subsidiar correções posteriores.
 - **Escopo respeitado:** nenhuma divergência foi corrigida neste documento ou no código.
-- **Conferência sugerida (amostra de 5 transições):** (1) pegar 3 dados — `main.py:sortear3Dados` L140–156; (2) passos R5 — `main.py` L229–230, L242–243, L254–255 e ausência de preservação em L212–219; (3) parar R7/R8 — `main.py` L262–277 e `showPlacar()` L50–64; (4) 3 tiros R6 — `main.py:showStatusPlayer` L88–94; (5) interromper/retomar R9 — ausência em `main.py`/`main_teste.py`/`mainAntigo.py` e tentativa parcial em `main_teste.py` L198–201, L283–288.
+- **Conferência sugerida (amostra de 5 transições):** (1) pegar 3 dados — `main.py:sortear3Dados` L140–156; (2) passos R5 — `main.py` L229–230, L242–243, L254–255 e ausência de preservação em L212–219; (3) parar R7/R8 — `main.py` L262–277 e `showPlacar()` L50–64; (4) 3 tiros R6 — `main.py:showStatusPlayer` L88–94; (5) interromper/retomar R9 — `main_teste.py:play()` L122–151, `save_game()` L109–110 e `load_game()` L113–114; contraste: ausente em `main.py`.
