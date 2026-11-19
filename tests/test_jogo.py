@@ -101,6 +101,10 @@ class TestPartida(unittest.TestCase):
         self.assertEqual(resultado['turno']['passo'], 1)
         self.assertEqual(resultado['turno']['tiro'], 1)
         self.assertIn(resultado['cores'][0], ('Verde', 'Amarelo', 'Vermelho'))
+        self.assertEqual(resultado['placar']['Ana'],
+                         {'cerebro': 1, 'passo': 1, 'tiro': 1})
+        self.assertEqual(resultado['placar']['Bob'],
+                         {'cerebro': 0, 'passo': 0, 'tiro': 0})
 
     def test_tres_tiros_no_turno_eliminam_jogador(self):
         partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(

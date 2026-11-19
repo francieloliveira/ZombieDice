@@ -181,7 +181,17 @@ class Partida(object):
             'faces': faces,
             'cores': [cor_do_dado(dado) for dado in dados],
             'turno': dict(self.turno),
+            'placar': self.placar_com_turno(),
         }
+
+    def placar_com_turno(self):
+        """Retorna uma cópia do placar incluindo o turno ainda em andamento."""
+        placar = {nome: dict(stats) for nome, stats in self.placar.items()}
+        nome = self.jogador_atual
+        if nome is not None:
+            for categoria, quantidade in self.turno.items():
+                placar[nome][categoria] += quantidade
+        return placar
 
     def estado_do_jogador(self, nome=None):
         """'vencedor', 'eliminado' ou 'jogando' para `nome` (da vez se omitido)."""
