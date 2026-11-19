@@ -3,7 +3,7 @@
 - **Card:** FRA-688 — Auditar o código contra as regras do README e classificar os achados por severidade.
 - **Base auditada:** `6c8033e` (`main`).
 - **Arquivo de implementação auditado:** `main.py` (277 linhas), confrontado com `README.md` e `docs/produto/caminho.md`.
-- **Método:** leitura integral do código e execução manual roteirizada do jogo, com entradas reais de jogador (sem build e sem suíte de testes). Para não esperar os `time.sleep(3)`, a reprodução usou um harness fora do repositório que neutraliza `time.sleep` e fixa `random.seed`. Nenhum arquivo de código foi alterado.
+- **Método:** leitura integral do código e execução manual roteirizada do jogo, com entradas reais de jogador (sem build e sem suíte de testes). Para não esperar os `time.sleep(3)`, a reprodução usou um harness fora do repositório que neutraliza `time.sleep` e fixa `random.seed(3)`; as transcrições estão no §9. Nenhum arquivo de código foi alterado. O `git-leitura` do revisor foi exercitado localmente contra este worktree e devolveu o diff e o conteúdo deste relatório; a falha relatada na revisão anterior (avisos do Xcode) não se reproduziu aqui.
 - **Escopo de arquivos:** este relatório é o único arquivo novo. `main.py`, `main_teste.py`, `mainAntigo.py`, `README.md` e `docs/produto/caminho.md` permanecem intactos.
 
 ## 1. Resumo executivo
@@ -70,7 +70,7 @@ O aceite pede verificação explícita de que os dados que sobram permanecem no 
 - **Arquivo/função:** `main.py`, `sortear3Dados()` (linhas 140-156) e laço principal (linhas 210-221).
 - **Comportamento atual:** `dadosSorteados` é global e só é limpo quando o copo é reposto (`main.py:214`) ou quando o jogador perde (`main.py:89`). `sortear3Dados()` faz `dadosSorteados.append(dado)` (`main.py:152`) e devolve `list(dadosSorteados)` (`main.py:156`). No segundo lançamento do turno, o retorno tem 6 dados, mas o laço usa `for i in range(3)` (`main.py:221`), isto é, os índices 0-2 — os **três dados do primeiro lançamento**. Nos lançamentos seguintes, 9, 12 etc., e o mesmo trio continua sendo relançado.
 - **Comportamento esperado (README/R4 e R5):** cada lançamento usa exatamente os 3 dados daquele lançamento: os dados de passos que voltaram + dados novos do tubo, completando 3.
-- **Reprodução manual:** iniciar `python3 main.py`, informar `2`, nomes `A` e `B`, e responder `s` três vezes no turno do primeiro jogador. As linhas "Dado sorteado:" repetem a mesma sequência de cores a cada lançamento. Observado com `random.seed(3)`: jogador B → `Verde, Vermelho, Vermelho` / `Verde, Vermelho, Vermelho` / `Verde, Vermelho, Vermelho`. No nível da função: chamar `sortear3Dados()` duas vezes sem limpar `dadosSorteados` devolve 3 e depois 6 dados; os primeiros 3 do segundo retorno são iguais aos do primeiro.
+- **Reprodução manual:** iniciar `python3 main.py`, informar `2`, nomes `A` e `B`, e responder `s` enquanto o jogador sobreviver (quem leva o terceiro tiro não é mais consultado). Observado com `random.seed(3)`: no turno de A, o primeiro lançamento imprime `Vermelho, Vermelho, Verde` e, após `s`, o segundo lançamento imprime exatamente as mesmas três cores; A leva o terceiro tiro e perde. No turno de B, os três lançamentos seguidos (duas vezes `s`, depois `n`) imprimem `Verde, Vermelho, Vermelho` nas três vezes. Transcrição no §9.2. No nível da função: chamar `sortear3Dados()` duas vezes sem limpar `dadosSorteados` devolve 3 e depois 6 dados; os primeiros 3 do segundo retorno são iguais aos do primeiro.
 - **Efeito:** um mesmo dado pode render tiro e depois cérebro no mesmo turno; os dados de passos não são os relançados; o copo é consumido sem que os dados usados correspondam aos sorteados.
 
 ### F-02 — Dado amarelo é lançado como vermelho
@@ -79,7 +79,7 @@ O aceite pede verificação explícita de que os dados que sobram permanecem no 
 - **Arquivo/função:** `main.py`, laço principal, ramo do amarelo (linhas 234-245).
 - **Comportamento atual:** `elif dadosSorteados == 'TPCTPC':` compara a **lista** `dadosSorteados` com a **string** `'TPCTPC'`; a igualdade é sempre `False`. Todo dado amarelo cai no `else` (`main.py:247-258`), que chama `sortearDadoVermelho()` e imprime "Vermelho".
 - **Comportamento esperado (README/R3):** dado amarelo deve usar `dadoAmarelo = 'TPCTPC'` (2 cérebros, 2 passos, 2 tiros) e ser identificado como amarelo. O teste correto é `dadosSorteados[i] == 'TPCTPC'`.
-- **Reprodução manual:** qualquer partida com lançamentos suficientes para sair um amarelo; a saída nunca contém "Dado sorteado: Amarelo" e o amarelo aparece como "Vermelho". Verificação direta: `['TPCTPC'] == 'TPCTPC'` → `False`.
+- **Reprodução manual:** qualquer partida com lançamentos suficientes para sair um amarelo; a saída nunca contém "Dado sorteado: Amarelo" e o amarelo aparece como "Vermelho". Com `random.seed(3)`, os três primeiros dados retirados do copo no turno de A são `Amarelo, Amarelo, Verde`, mas o jogo imprime `Vermelho, Vermelho, Verde` (§9.2). Verificação direta: `['TPCTPC'] == 'TPCTPC'` → `False`.
 - **Efeito:** 4 dos 13 dados têm distribuição errada (mais tiros e menos cérebros que o previsto), violando R3.
 
 ### F-03 — Passos não são relançados; são apenas contados
@@ -212,5 +212,123 @@ Todos os casos abaixo foram executados manualmente com o jogo real, usando `time
 
 ## 8. Prova desta auditoria
 
-- O card pede **sem suíte**: a verificação foi a execução manual do jogo nos casos descritos em cada achado (entradas e passos acima), com a saída observada registrada neste relatório.
+- O card pede **sem suíte**: a verificação foi a execução manual do jogo nos casos descritos em cada achado (entradas e passos acima), com a saída observada registrada neste relatório e as transcrições no §9.
 - `git diff --stat 6c8033e..HEAD` mostra apenas `docs/produto/auditoria-fra-688.md`; nenhum arquivo de código foi alterado.
+
+## 9. Apêndice — como revisar e transcrições
+
+### 9.1 Comandos de leitura
+
+O único arquivo novo é este relatório; o head do PR é um commit sobre `6c8033e` (`main`).
+Com a ferramenta do revisor:
+
+    git-leitura diff origin/main...origin/francieltechnix/fra-688-auditar-o-codigo-contra-as-regras-do --stat
+    # saída esperada: 1 file changed (só docs/produto/auditoria-fra-688.md)
+
+    git-leitura show origin/francieltechnix/fra-688-auditar-o-codigo-contra-as-regras-do:docs/produto/auditoria-fra-688.md
+
+O segundo comando imprime este relatório desde o título. Sem o wrapper:
+
+    git --no-pager diff 6c8033e...HEAD --stat
+    git --no-pager show HEAD:docs/produto/auditoria-fra-688.md
+
+Se o `git` do macOS devolver apenas avisos do Xcode, o problema está no shim do Xcode do
+ambiente de leitura, não no repositório: usar `/usr/bin/git`, apontar `DEVELOPER_DIR` para a
+instalação ativa ou ler o arquivo direto resolve. Neste worktree o `git-leitura` devolveu
+`1 file changed` no diff e o texto deste relatório no `show`.
+
+### 9.2 Transcrições das execuções
+
+Execuções reais de `python3 main.py` com `time.sleep` neutralizado e `random.seed(3)`, em
+harness fora do repositório. Blocos de placar de outros jogadores aparecem repetidos porque
+`showPlacar()` imprime o dicionário inteiro a cada lançamento.
+
+**F-01/F-02 — mesmo trio e amarelo rotulado como vermelho (trecho do turno de A, seguido de `s`):**
+
+```
+*** Jogador atual: "A" ***
+*** Sorteando 3 dados! ***
+Dado sorteado: Vermelho
+Face sorteada: T
+Dado sorteado: Vermelho
+Face sorteada: P
+Dado sorteado: Verde
+Face sorteada: T
+*** Cerebro: 0 Passo: 1 Tiro: 2
+Deseja continuar jogando? (s/n): *** Sorteando 3 dados! ***
+Dado sorteado: Vermelho
+Face sorteada: C
+Dado sorteado: Vermelho
+Face sorteada: T
+Dado sorteado: Verde
+Face sorteada: P
+*** Cerebro: 1 Passo: 2 Tiro: 3
+Jogador: "A" Perdeu!
+```
+
+Sonda do mesmo seed, no nível do sorteio: jogador sorteado `A`; dados realmente retirados do
+copo `['Amarelo', 'Amarelo', 'Verde']`; `['TPCTPC'] == 'TPCTPC'` → `False`. Os dois primeiros
+dados eram amarelos, mas o jogo os rotulou "Vermelho" e sorteou as faces com
+`sortearDadoVermelho()` (`TPTCPT`), não com `TPCTPC` (F-02). O segundo lançamento reusou o
+mesmo trio de cores, agora com faces novas (`C, T, P`), até A levar o terceiro tiro (F-01).
+
+**F-01 — turno de B, três lançamentos seguidos (duas vezes `s`, depois `n`):**
+
+| Lançamento | Cores impressas | Faces |
+| --- | --- | --- |
+| 1 | `Verde, Vermelho, Vermelho` | `P, P, C` |
+| 2 | `Verde, Vermelho, Vermelho` | `C, P, P` |
+| 3 | `Verde, Vermelho, Vermelho` | `C, T, P` |
+
+As três cores são as mesmas do primeiro lançamento; só as faces mudam porque o laço reprocessa
+os índices 0-2 de `dadosSorteados` (F-01).
+
+**F-06/F-12 — um turno por jogador e fim sem vencedor (trecho com 2 jogadores, `n` nos dois turnos):**
+
+```
+*** Jogador atual: "A" ***
+*** Placar: "A"
+*** Cerebro: 0 Passo: 1 Tiro: 2
+Deseja continuar jogando? (s/n): *** Jogador atual: "B" ***
+*** Placar: "B"
+*** Cerebro: 0 Passo: 2 Tiro: 1
+Deseja continuar jogando? (s/n): O jogo foi terminou!
+```
+
+Não há segunda rodada; o jogo termina com 0 cérebro e `players` vazio, sem testar a vitória
+por 13 cérebros (F-05/F-06), e imprime o texto com erro de concordância (F-12).
+
+**F-07/F-08 — `N` e `x` continuam o turno:** cada uma dessas entradas (seguida de `n`)
+produziu 3 linhas `*** Sorteando 3 dados! ***` — A rolou 2 vezes e B, 1 —, o mesmo fluxo de
+`s`. Em ambos os casos A só parou porque levou o terceiro tiro. Com `n` no primeiro turno
+(transcrição acima), A rolou uma única vez e passou a vez.
+
+**F-09 — quantidade de jogadores não numérica (`abc`):**
+
+```
+Traceback (most recent call last):
+  File ".../main.py", line 163, in <module>
+    while int(qtdPlayers) < 2:
+ValueError: invalid literal for int() with base 10: 'abc'
+```
+
+**F-10 — nome vazio aceito (Enter no 1º jogador, `B` no 2º):**
+
+```
+*** Jogadores Cadastrados ***
+{'': (0, 0, 0), 'B': (0, 0, 0)}
+...
+*** Placar: ""
+```
+
+**F-11 — texto "maior que 2" com `1` e depois `2`:**
+
+```
+Informe a quantidade de Players
+A quantidade de Usuários deve ser maior que 2!
+Informe a quantidade de Players
+*** Cadastro de Players ***
+...
+```
+
+O `2` foi aceito e o jogo iniciou, contrariando a mensagem (F-11).
