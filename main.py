@@ -1,6 +1,8 @@
 # Curso: Gestão da Tecnologia da Informação
 # Aluno: José Franciel Pires de Oliveira
 
+import random
+
 import jogo
 
 
@@ -49,12 +51,26 @@ def mostrar_copo(copo):
         print("Index: %d Dado: %s" % (indice, copo[indice]))
 
 
-def mostrar_placar(placar):
+def mostrar_placar(partida):
+    """Mostra o placar de todos os jogadores.
+
+    Para o jogador da vez, soma os acumulados do turno em andamento
+    (cérebros, passos e tiros ainda não contabilizados) ao placar, de modo
+    que a tela reflita o estado real depois de cada lançamento — o mesmo
+    comportamento observável do terminal antes da separação da lógica.
+    """
     print("#########################################")
-    for nome in placar:
-        stats = placar[nome]
+    for nome in partida.placar:
+        stats = partida.placar[nome]
+        if partida.jogador_atual == nome:
+            turno = partida.turno
+        else:
+            turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
+        cerebro = stats['cerebro'] + turno['cerebro']
+        passo = stats['passo'] + turno['passo']
+        tiro = stats['tiro'] + turno['tiro']
         print('*** Placar: "%s" \n*** Cerebro: %d Passo: %d Tiro: %d'
-              % (nome, stats['cerebro'], stats['passo'], stats['tiro']))
+              % (nome, cerebro, passo, tiro))
     print("#########################################")
 
 
@@ -69,7 +85,7 @@ def main():
     qtd_players = ler_qtd_players()
     nomes = ler_nomes(qtd_players)
 
-    partida = jogo.Partida(nomes)
+    partida = jogo.Partida(nomes, random=random.Random())
 
     print("*** Jogadores Cadastrados ***")
     print(partida.jogadores)
@@ -82,7 +98,7 @@ def main():
         nome = partida.proximo_jogador()
         if nome is None:
             print('O jogo foi terminou!')
-            mostrar_placar(partida.placar)
+            mostrar_placar(partida)
             break
 
         partida.iniciar_turno(nome)
@@ -102,22 +118,22 @@ def main():
                 partida.parar_turno(nome)
                 partida.vencedor = nome
                 print("Jogador: \"%s\" Venceu!" % nome)
-                mostrar_placar(partida.placar)
+                mostrar_placar(partida)
                 break
 
-            mostrar_placar(partida.placar)
+            mostrar_placar(partida)
 
             resposta = ler_resposta("Deseja continuar jogando? (s/n): ")
             resposta = resposta.strip().lower()
             if resposta == "n":
                 partida.parar_turno(nome)
                 print("*** Pontuação contabilizada para \"%s\" ***" % nome)
-                mostrar_placar(partida.placar)
+                mostrar_placar(partida)
                 break
 
     if partida.vencedor is not None:
         print("*** Vencedor: \"%s\" ***" % partida.vencedor)
-        mostrar_placar(partida.placar)
+        mostrar_placar(partida)
 
 
 if __name__ == '__main__':

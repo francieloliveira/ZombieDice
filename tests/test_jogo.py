@@ -147,6 +147,15 @@ class TestPartida(unittest.TestCase):
         self.assertIsNone(partida.jogador_atual)
         self.assertIn('Ana', partida.jogados)
 
+    def test_parar_turno_devolve_dados_ao_copo(self):
+        """Ao parar, os dados saem de mão e o copo fica cheio para o próximo turno."""
+        partida = jogo.Partida(['Ana', 'Bob'], random=random.Random(42))
+        partida.iniciar_turno('Ana')
+        partida.lancar()   # remove 3 dados do copo
+        self.assertEqual(len(partida.copo), jogo.TOTAL_DADOS - jogo.DADOS_POR_LANCAMENTO)
+        partida.parar_turno('Ana')
+        self.assertEqual(len(partida.copo), jogo.TOTAL_DADOS)
+
     def test_passos_sao_relancados_completando_com_novos_dados_do_tubo(self):
         """R5: dados em passo são relançados, completando a mão com dados do tubo."""
         partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(

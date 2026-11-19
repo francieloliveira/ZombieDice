@@ -212,6 +212,7 @@ class Partida(object):
         self.placar[nome]['tiro'] = 0
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
         self.dados_passo = []
+        self.copo = novo_copo()   # os dados voltam ao tubo; próximo turno começa com copo cheio
         self.jogador_atual = None
         self.jogados.add(nome)
         return dict(self.placar[nome])
