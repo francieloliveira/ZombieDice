@@ -51,14 +51,16 @@ A tela do turno (protótipo FRA-692) exibe, usando a interface de jogo separada 
 - **Dados rolados**: 3 dados na mão, cada um com cor (verde/amarelo/vermelho) e face sorteada (C = cérebro, P = passos, T = tiro), conforme R4/R5.
 - **Contadores**: cérebros do turno e tiros do turno (e placar acumulado), conforme R6/R7.
 - **Botões**: **Rolar** (pega 3 dados e lança, R4/R8) e **Parar** (contabiliza cérebros e zera tiros do turno, R7/R8).
-- **Interromper e retomar**: a tela expõe a ação de interromper a partida ligada à transição mapeada em `docs/produto/fluxo-jogo.md` §7 (R9). Na base atual não há persistência entre execuções (R9 não implementado), então o protótipo não inventa mecânica nova de salvamento; apenas reflete o fluxo mapeado e deixa a retomada para as histórias de correção (FRA-689/FRA-690). A escolha de Tkinter não exige mudança em nenhuma regra R1–R9.
+- **Interromper e retomar**: a tela expõe a ação de interromper a partida ligada à transição mapeada em `docs/produto/fluxo-jogo.md` §7 (R9). A persistência entre execuções já existe no fluxo integrado (FRA-689, `main_teste.py`: `Game.snapshot`/`resume`, `save_game`/`load_game`); o protótipo não cria mecânica nova de salvamento, apenas chama esse mecanismo existente. O fluxo legado (`main.py`) segue sem persistência. A escolha de Tkinter não exige mudança em nenhuma regra R1–R9.
 
 ## Ligação com o fluxo mapeado
+
+(Arquivo `docs/produto/fluxo-jogo.md`, entregue pela dependência FRA-687.)
 
 - Rolagem e avaliação: `docs/produto/fluxo-jogo.md` §3 (pegar 3 dados, lançar, contabilizar face) e §4 (derrota por 3 tiros, vitória por 13 cérebros).
 - Parar/continuar: §5 (R7/R8).
 - Fim de partida: §6.
-- Interromper/retomar: §7 (R9), hoje não implementado — ver nota acima.
+- Interromper/retomar: §7 (R9), implementado em `main_teste.py` via FRA-689; o fluxo legado `main.py` segue sem persistência.
 
 ## Regras não alteradas
 
