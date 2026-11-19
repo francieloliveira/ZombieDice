@@ -225,5 +225,6 @@ class Partida(object):
             self.eliminados.append(nome)
         self.turno = {'cerebro': 0, 'passo': 0, 'tiro': 0}
         self.dados_passo = []
+        self.copo = novo_copo()   # os dados voltam ao tubo para o próximo jogador
         self.jogador_atual = None
         self.jogados.add(nome)
