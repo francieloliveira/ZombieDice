@@ -28,6 +28,7 @@ class Sala:
         self.nomes = [nome]
         self.clientes = set()
         self.resultado = None
+        self.jogadas = 0
 
     def estado(self, erro=None):
         p = self.partida
@@ -44,10 +45,8 @@ class Sala:
             "eliminados": list(p.eliminados) if p else [],
             "resultado": self.resultado,
         }
-        if p:
-            # O estado público contém apenas o necessário para desenhar a mesa.
-            # O tubo, os dados pendentes e a semente pertencem ao servidor.
-            estado["resultado"] = sala.resultado
+        # O estado público contém apenas o necessário para desenhar a mesa.
+        # O tubo, os dados pendentes e a semente pertencem ao servidor.
         if erro:
             estado["erro"] = erro
         return estado
@@ -81,25 +80,15 @@ class ServidorPartidas:
             if sala.partida is None:
                 sala.partida = jogo.Partida(sala.nomes, random=self.rng)
                 sala.partida.iniciar_turno(sala.partida.proximo_jogador())
+            elif sala.jogadas == 0:
+                # Recalcula a vez inicial usando todos os nomes que entraram
+                # antes da primeira ação, sem inspecionar detalhes de Partida.
+                partida = jogo.Partida(sala.nomes, random=self.rng)
+                sala.partida = partida
+                partida.iniciar_turno(partida.proximo_jogador())
             else:
-                partida = sala.partida
-                # Antes de qualquer jogada, escolha a vez inicial com todos
-                # os jogadores que já entraram na sala.
-                estado_inicial = (
-                    not partida.jogados
-                    and not partida.eliminados
-                    and all(not any(stats.values()) for stats in partida.placar.values())
-                    and partida.turno == {"cerebro": 0, "passo": 0, "tiro": 0}
-                    and len(partida.copo) == jogo.TOTAL_DADOS
-                    and not partida.dados_passo
-                )
-                if estado_inicial:
-                    partida = jogo.Partida(sala.nomes, random=self.rng)
-                    sala.partida = partida
-                    partida.iniciar_turno(partida.proximo_jogador())
-                else:
-                    partida.jogadores.append(nome)
-                    partida.placar[nome] = {"cerebro": 0, "passo": 0, "tiro": 0}
+                sala.partida.jogadores.append(nome)
+                sala.partida.placar[nome] = {"cerebro": 0, "passo": 0, "tiro": 0}
         return sala
 
     def agir(self, sala, nome, acao):
@@ -110,6 +99,7 @@ class ServidorPartidas:
             raise ErroAcao("ação recusada: não é a vez de %s" % p.jogador_atual)
         if acao == "rolar":
             lancamento = p.lancar()
+            sala.jogadas += 1
             sala.resultado = {
                 chave: lancamento[chave]
                 for chave in ("jogador", "faces", "cores", "turno")
@@ -122,6 +112,7 @@ class ServidorPartidas:
                 p.finalizar_vitoria(nome)
         elif acao == "parar":
             p.parar_turno(nome)
+            sala.jogadas += 1
             sala.resultado = None
             self._avancar(sala)
         else:
