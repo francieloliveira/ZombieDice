@@ -45,13 +45,9 @@ class Sala:
             "resultado": self.resultado,
         }
         if p:
-            # Mesmas chaves centrais do JSON de persistencia.salvar.
-            estado.update({
-                "copo": [jogo.cor_do_dado(dado) for dado in p.copo],
-                "jogados": sorted(p.jogados),
-                "dados_passo": [jogo.cor_do_dado(dado) for dado in p.dados_passo],
-                "rng": p.random.getstate(),
-            })
+            # O estado público contém apenas o necessário para desenhar a mesa.
+            # O tubo, os dados pendentes e a semente pertencem ao servidor.
+            estado["resultado"] = sala.resultado
         if erro:
             estado["erro"] = erro
         return estado
@@ -113,7 +109,11 @@ class ServidorPartidas:
         if nome != p.jogador_atual:
             raise ErroAcao("ação recusada: não é a vez de %s" % p.jogador_atual)
         if acao == "rolar":
-            sala.resultado = p.lancar()
+            lancamento = p.lancar()
+            sala.resultado = {
+                chave: lancamento[chave]
+                for chave in ("jogador", "faces", "cores", "turno")
+            }
             status = p.estado_do_jogador(nome)
             if status == jogo.STATUS_ELIMINADO:
                 p.eliminar_jogador(nome)
@@ -240,7 +240,7 @@ class ServidorHTTPWebSocket:
                         sala.clientes.add(writer)
                         await self._broadcast(sala)
                     else:
-                        await self.gerenciador.agir(sala, nome, acao)
+                        self.gerenciador.agir(sala, nome, acao)
                         await self._broadcast(sala)
                 except (ErroAcao, ValueError, TypeError) as exc:
                     await self._enviar(writer, {"erro": str(exc), "estado": sala.estado() if sala else None})
