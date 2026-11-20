@@ -119,7 +119,7 @@ class TestPartida(unittest.TestCase):
         partida = jogo.Partida(['Ana', 'Bob'], random=FixoRandom(
             faces=[jogo.CEREBRO, jogo.PASSO, jogo.TIRO,
                    jogo.TIRO, jogo.TIRO, jogo.PASSO],
-            indices=[0, 1, 2, 3]))
+            indices=[0, 1, 2, 3, 4]))
         partida.iniciar_turno('Ana')
         partida.lancar()
         partida.lancar()
