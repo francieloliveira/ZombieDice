@@ -20,6 +20,7 @@ class TelaTurno:
         self.root.title("Zombie Dice — turno")
         self.partida = None
         self.resultado = None
+        self.encerrada = False
         self.status = tk.StringVar(value="Inicie uma partida ou retome uma salva.")
         self._montar()
         self.root.protocol("WM_DELETE_WINDOW", self.interromper)
@@ -43,10 +44,15 @@ class TelaTurno:
         self.start_button = tk.Button(self.root, text="Nova partida", command=self.nova_partida)
         self.start_button.pack(pady=4)
 
+    def _apagar_save(self):
+        """Um único ponto apaga o save: o estado encerrado não volta ao abrir."""
+        SAVE_PATH.unlink(missing_ok=True)
+
     def _oferecer_retomar(self):
         if SAVE_PATH.exists() and messagebox.askyesno("Partida salva", "Deseja retomar a partida salva?"):
             try:
                 self.partida, self.resultado = persistencia.carregar(SAVE_PATH)
+                self.encerrada = False
                 self._atualizar()
                 if self.resultado:
                     self._mostrar_dados()
@@ -54,9 +60,14 @@ class TelaTurno:
             except (OSError, ValueError, KeyError, TypeError) as erro:
                 messagebox.showerror("Erro ao retomar", str(erro))
         elif SAVE_PATH.exists():
-            SAVE_PATH.unlink()
+            self._apagar_save()
 
     def nova_partida(self):
+        em_andamento = (self.partida is not None and not self.encerrada
+                        and not self.partida.vencedor)
+        if em_andamento and not messagebox.askyesno(
+                "Nova partida", "A partida em andamento será descartada. Continuar?"):
+            return
         nomes = simpledialog.askstring("Jogadores", "Nomes separados por vírgula (mínimo 2):")
         if nomes is None:
             return
@@ -67,6 +78,7 @@ class TelaTurno:
             messagebox.showerror("Jogadores inválidos", str(erro))
             return
         self.resultado = None
+        self.encerrada = False
         self._atualizar()
         self._preparar_vez()
 
@@ -75,7 +87,7 @@ class TelaTurno:
         if p is None:
             return
         if p.vencedor:
-            SAVE_PATH.unlink(missing_ok=True)
+            self._apagar_save()
             self.status.set("Vencedor: " + p.vencedor)
             self.roll_button.config(state="disabled")
             self.stop_button.config(state="disabled")
@@ -83,8 +95,10 @@ class TelaTurno:
         if p.jogador_atual is None:
             nome = p.proximo_jogador()
             if nome is None:
-                SAVE_PATH.unlink(missing_ok=True)
-                self.status.set("Partida encerrada: não há jogadores ativos.")
+                # Fim normal de partida sem 13 cérebros: encerrada, não retomável.
+                self.encerrada = True
+                self._apagar_save()
+                self.status.set("Partida encerrada: todos já jogaram.")
                 self.roll_button.config(state="disabled")
                 self.stop_button.config(state="disabled")
                 return
@@ -112,7 +126,7 @@ class TelaTurno:
         elif estado == jogo.STATUS_VITORIA:
             nome = self.partida.jogador_atual
             self.partida.finalizar_vitoria(nome)
-            SAVE_PATH.unlink(missing_ok=True)
+            self._apagar_save()
             self.status.set("Vencedor: " + nome)
             self.roll_button.config(state="disabled")
             self.stop_button.config(state="disabled")
@@ -135,8 +149,9 @@ class TelaTurno:
             self.root.destroy()
             return
         try:
-            if self.partida.vencedor:
-                SAVE_PATH.unlink(missing_ok=True)
+            if self.partida.vencedor or self.encerrada:
+                # Partida acabada não vira save: não se oferece retomar o que terminou.
+                self._apagar_save()
             else:
                 persistencia.salvar(self.partida, self.resultado, SAVE_PATH)
             self.root.destroy()
