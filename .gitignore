@@ -1,3 +1,4 @@
 .lane/
 __pycache__/
 *.pyc
+partida_gui.json
