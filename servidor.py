@@ -78,12 +78,32 @@ class ServidorPartidas:
         nome = self._nome(nome)
         if nome in sala.nomes:
             raise ErroAcao("nome já está nesta sala")
-        if sala.partida or len(sala.nomes) >= 8:
-            raise ErroAcao("sala cheia ou partida já iniciada")
+        if len(sala.nomes) >= 8:
+            raise ErroAcao("sala cheia: máximo de 8 jogadores")
         sala.nomes.append(nome)
         if len(sala.nomes) >= 2:
-            sala.partida = jogo.Partida(sala.nomes, random=self.rng)
-            sala.partida.iniciar_turno(sala.partida.proximo_jogador())
+            if sala.partida is None:
+                sala.partida = jogo.Partida(sala.nomes, random=self.rng)
+                sala.partida.iniciar_turno(sala.partida.proximo_jogador())
+            else:
+                partida = sala.partida
+                # Antes de qualquer jogada, escolha a vez inicial com todos
+                # os jogadores que já entraram na sala.
+                estado_inicial = (
+                    not partida.jogados
+                    and not partida.eliminados
+                    and all(not any(stats.values()) for stats in partida.placar.values())
+                    and partida.turno == {"cerebro": 0, "passo": 0, "tiro": 0}
+                    and len(partida.copo) == jogo.TOTAL_DADOS
+                    and not partida.dados_passo
+                )
+                if estado_inicial:
+                    partida = jogo.Partida(sala.nomes, random=self.rng)
+                    sala.partida = partida
+                    partida.iniciar_turno(partida.proximo_jogador())
+                else:
+                    partida.jogadores.append(nome)
+                    partida.placar[nome] = {"cerebro": 0, "passo": 0, "tiro": 0}
         return sala
 
     def agir(self, sala, nome, acao):
