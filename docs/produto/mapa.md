@@ -10,7 +10,7 @@
 
 ## Prova
 - Comando: `python3 {suite}`
-- (nenhuma pasta de teste encontrada)
+- Testes em `tests/`
 <!-- gerado:fim -->
 
 ## Convenções
